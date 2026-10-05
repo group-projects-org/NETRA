@@ -368,29 +368,63 @@ export default function ExaminerDashboard() {
     );
   };
 
-  const submitMockUpload = () => {
+  const submitMockUpload = (formData) => {
     if (!selectedFile) {
       setUploadMessage("Please select a PDF file first.");
       return;
     }
+const selectedSchedule = {
+  "schedule-1": {
+    date: "14 Nov 2026",
+    shift: "Shift 1",
+    time: "10:00 AM",
+    duration: "3 Hours",
+  },
+  "schedule-2": {
+    date: "14 Nov 2026",
+    shift: "Shift 2",
+    time: "02:00 PM",
+    duration: "3 Hours",
+  },
+  "schedule-3": {
+    date: "15 Nov 2026",
+    shift: "Shift 1",
+    time: "10:00 AM",
+    duration: "3 Hours",
+  },
+  "schedule-4": {
+    date: "20 Nov 2026",
+    shift: "Shift 1",
+    time: "10:00 AM",
+    duration: "3 Hours",
+  },
+}[formData.schedule];
 
-    const newPaper = {
-      id: `NETRA-QP-${String(44 + papers.length).padStart(4, "0")}`,
-      examination: "National Eligibility Test",
-      subject: "Physics",
-      set: "A",
-      date: "22 Nov 2026",
-      shift: "Shift 1",
-      time: "10:00 AM",
-      duration: "3 Hours",
-      stage: "Submitted",
-      updated: "04 Oct 2026",
-      updatedTime: "Now",
-      file: selectedFile.name,
-      size: `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB`,
-      uploaded: "04 Oct 2026, Now",
-      integrity: "Verified",
-    };
+const newPaper = {
+  id: `NETRA-QP-${String(44 + papers.length).padStart(4, "0")}`,
+
+  examination: formData.examination,
+  subject: formData.subject,
+  set: formData.set,
+
+  date: selectedSchedule.date,
+  shift: selectedSchedule.shift,
+  time: selectedSchedule.time,
+  duration: selectedSchedule.duration,
+
+  language: formData.language,
+
+  stage: "Submitted",
+
+  updated: "05 Oct 2026",
+  updatedTime: "Now",
+
+  file: selectedFile.name,
+  size: `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB`,
+  uploaded: "05 Oct 2026, Now",
+
+  integrity: "Verified",
+};
 
     setPapers((current) => [newPaper, ...current]);
     setSelectedFile(null);
@@ -773,15 +807,7 @@ export default function ExaminerDashboard() {
             uploadMessage={uploadMessage}
           />
 
-          <RecentPapers
-            Card={Card}
-            SectionHeader={SectionHeader}
-            StatusBadge={StatusBadge}
-            papers={papers}
-            openPaper={openPaper}
-            setPaperFilter={setPaperFilter}
-            setView={setView}
-          />
+        
         </div>
 
         <div className="space-y-5">
