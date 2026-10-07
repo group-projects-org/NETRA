@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {Activity, AlertCircle, ArrowLeft, Bell, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Circle, Clock3, FileCheck2, FileText, FileUp, Filter, HelpCircle, Info,KeyRound,
 LayoutDashboard, LifeBuoy, LockKeyhole, LogOut, Menu, MoreVertical, Search, Settings, Shield, ShieldCheck, Upload, User,UserCircle, X,} from "lucide-react";
 import UploadQuestionPaper from "./UploadQuestionPaper";
@@ -295,7 +295,18 @@ function StatCard({ icon: Icon, count, title, subtitle, tone, onClick }) {
 export default function ExaminerDashboard() {
   const [view, setView] = useState("dashboard");
   const [papers, setPapers] = useState(initialPapers);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState(() => {
+  const saved = localStorage.getItem("netra_notifications");
+
+  return saved ? JSON.parse(saved) : initialNotifications;
+});
+
+useEffect(() => {
+  localStorage.setItem(
+    "netra_notifications",
+    JSON.stringify(notifications)
+  );
+}, [notifications]);
 
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [search, setSearch] = useState("");

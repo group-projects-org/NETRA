@@ -3,6 +3,7 @@ import Home from "./components/Home";
 import Login from "./components/Login";
 import ExaminerDashboard from "./components/examiner/ExaminerDashboard";
 import UploadQuestionPaper from "./components/examiner/UploadQuestionPaper";
+import AdminDashboard from "./components/admin/AdminDashboard";
 
 function App() {
   return (
@@ -14,6 +15,11 @@ function App() {
           path="/examiner/dashboard"
           element={<ExaminerDashboard />}
         />
+        <Route
+         path="/admin/dashboard" 
+         element={<AdminDashboard />}
+        />     
+        
         <Route path="/examiner/upload" element={<UploadQuestionPaper />}/>
       </Routes>
     </BrowserRouter>

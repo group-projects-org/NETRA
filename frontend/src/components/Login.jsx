@@ -5,8 +5,45 @@ import { useNavigate } from "react-router-dom";
 function Login() {
   const navigate = useNavigate();
   const [role, setRole] = useState("Examiner");
+  const [officialId, setOfficialId] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [captchaChecked, setCaptchaChecked] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  const handleLogin = () => {
+  setLoginError("");
+
+  if (role === "Admin") {
+    navigate("/admin/dashboard");
+    return;
+  }
+
+  if (role === "Examiner") {
+    const saved = localStorage.getItem("netra_examiners");
+    const examiners = saved ? JSON.parse(saved) : [];
+
+    const examiner = examiners.find(
+      (item) => item.id === officialId.trim()
+    );
+
+    if (!examiner) {
+      setLoginError("Examiner ID not found.");
+      return;
+    }
+
+    if (examiner.status !== "Approved") {
+      setLoginError(
+        `Your account is currently ${examiner.status}. Admin approval is required.`
+      );
+      return;
+    }
+
+    navigate("/examiner/dashboard");
+    return;
+  }
+
+  navigate("/examiner/dashboard");
+};
 
   const handleMouseMove = (e) => {
     const card = e.currentTarget;
@@ -90,6 +127,7 @@ function Login() {
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#1E4E70] focus:ring-1 focus:ring-[#1E4E70]/20"
               >
                 <option>Examiner</option>
+                <option>Admin</option>
                 <option>Centre Superintendent</option>
               </select>
             </div>
@@ -105,6 +143,8 @@ function Login() {
               <input
                 id="officialId"
                 type="text"
+                value={officialId}
+                onChange={(e) => setOfficialId(e.target.value)}
                 placeholder="Enter your official ID"
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 transition focus:border-[#1E4E70] focus:ring-1 focus:ring-[#1E4E70]/20"
               />
@@ -157,9 +197,15 @@ function Login() {
               <span className="text-[10px] text-slate-400">Verification</span>
             </div>
 
+            {loginError && (
+              <p className="text-xs font-medium text-red-600">
+                {loginError}
+                </p>
+              )}
+
             <button
-             onClick={()=>navigate("/examiner/dashboard")}
-              type="button"
+             onClick={handleLogin}
+             type="button"
               
               disabled={!captchaChecked}
               className="w-full rounded-md bg-[#1E4E70] py-2.5 text-sm font-medium text-white transition hover:bg-[#173E59] disabled:cursor-not-allowed disabled:opacity-50"
