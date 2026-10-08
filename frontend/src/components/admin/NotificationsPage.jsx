@@ -1,54 +1,21 @@
 import { useState } from "react";
-import { Bell, Send, Trash2 } from "lucide-react";
+import { Bell, Send } from "lucide-react";
 
-export default function NotificationsPage({
-  notifications,
-  setNotifications,
-}) {
+export default function NotificationsPage() {
   const [message, setMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const sendNotification = () => {
-  if (!message.trim()) return;
+    if (!message.trim()) return;
 
-  const newNotification = {
-    id: Date.now(),
-    title: "Admin Notification",
-    message: message.trim(),
-    time: "Just now",
-    type: "info",
-    unread: true,
+    // this will be replaced with an API call.
+    setSuccessMessage("Notification sent successfully.");
+    setMessage("");
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
   };
-
-  setNotifications((current) => {
-    const updated = [newNotification, ...current];
-
-    localStorage.setItem(
-      "netra_notifications",
-      JSON.stringify(updated)
-    );
-
-    return updated;
-  });
-
-  setMessage("");
-};
-
-
-  const deleteNotification = (id) => {
-  setNotifications((current) => {
-    const updated = current.filter(
-      (notification) => notification.id !== id
-    );
-
-    localStorage.setItem(
-      "netra_notifications",
-      JSON.stringify(updated)
-    );
-
-    return updated;
-  });
-};
-  
 
   return (
     <div className="space-y-5">
@@ -86,6 +53,12 @@ export default function NotificationsPage({
           <Send size={16} />
           Send Notification
         </button>
+
+        {successMessage && (
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {successMessage}
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.03)]">
@@ -97,42 +70,9 @@ export default function NotificationsPage({
           </h2>
         </div>
 
-        {notifications.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">
-            No notifications available.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="flex items-start justify-between gap-4 p-5"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-slate-800">
-                    {notification.title}
-                  </div>
-
-                  <div className="mt-1 text-sm text-slate-600">
-                    {notification.message}
-                  </div>
-
-                  <div className="mt-2 text-xs text-slate-400">
-                    {notification.time}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => deleteNotification(notification.id)}
-                  className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100"
-                  title="Delete notification"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="p-10 text-center text-sm text-slate-400">
+          No notifications available.
+        </div>
       </div>
     </div>
   );

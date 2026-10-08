@@ -2,22 +2,7 @@ import { useEffect, useState } from "react";
 import CalendarPage from "./CalendarPage";
 import SchedulePage from "./SchedulePage";
 import NotificationsPage from "./NotificationsPage";
-import {
-  Activity,
-  Bell,
-  CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  Clock3,
-  FileText,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Shield,
-  UserCheck,
-  Users,
-  X,
-} from "lucide-react";
+import {Activity,Bell,CalendarDays,CheckCircle2,ChevronRight,Clock3,FileText,LayoutDashboard,LogOut,Menu,Shield,UserCheck,Users,X,} from "lucide-react";
 
 const admin = {
   name: "N.E.T.R.A. Administrator",
@@ -120,10 +105,8 @@ function StatCard({ icon: Icon, count, title, subtitle }) {
 export default function AdminDashboard() {
 const [view, setView] = useState("dashboard");
 const [mobileSidebar, setMobileSidebar] = useState(false);
-
 const [examiners, setExaminers] = useState(() => {
   const saved = localStorage.getItem("netra_examiners");
-
   return saved ? JSON.parse(saved) : initialExaminers;
 });
 
@@ -135,18 +118,7 @@ useEffect(() => {
 }, [examiners]);
 
 const [schedules,setSchedules] = useState(initialSchedules);
-const [notifications, setNotifications] = useState(() => {
-  const saved = localStorage.getItem("netra_notifications");
-
-  return saved ? JSON.parse(saved) : initialNotifications;
-});
-
-useEffect(() => {
-  localStorage.setItem(
-    "netra_notifications",
-    JSON.stringify(notifications)
-  );
-}, [notifications]);
+const [notifications, setNotifications] = useState(initialNotifications);
 
 const [calendarEvents, setCalendarEvents] = useState([
   {

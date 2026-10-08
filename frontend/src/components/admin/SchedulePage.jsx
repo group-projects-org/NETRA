@@ -6,7 +6,6 @@ export default function SchedulePage({
   setSchedules,
 }) {
   const [showForm, setShowForm] = useState(false);
-
   const [examName, setExamName] = useState("");
   const [examDate, setExamDate] = useState("");
   const [examTime, setExamTime] = useState("");
