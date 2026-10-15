@@ -1,5 +1,5 @@
 import { CalendarDays } from "lucide-react";
-
+import ThemeToggle from "../ThemeToggle";
 export default function UpcomingSchedule({ Card, SectionHeader, navigate }) {
   return (
     <Card>

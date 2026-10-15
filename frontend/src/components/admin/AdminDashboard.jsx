@@ -3,7 +3,7 @@ import CalendarPage from "./CalendarPage";
 import SchedulePage from "./SchedulePage";
 import NotificationsPage from "./NotificationsPage";
 import {Activity,Bell,CalendarDays,CheckCircle2,ChevronRight,Clock3,FileText,LayoutDashboard,LogOut,Menu,Shield,UserCheck,Users,X,} from "lucide-react";
-
+import ThemeToggle from "../ThemeToggle";
 const admin = {
   name: "N.E.T.R.A. Administrator",
   id: "ADM-00001",
@@ -236,6 +236,7 @@ const [eventTitle, setEventTitle] = useState("");
       </div>
 
       <div className="ml-auto flex items-center gap-3">
+        <ThemeToggle />
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3e6484] text-sm font-semibold text-white">
           AD
         </div>

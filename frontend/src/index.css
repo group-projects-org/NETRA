@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@custom-variant dark (&:where(.dark, .dark *));
 html {
   scroll-behavior: smooth;
 }
@@ -44,4 +44,93 @@ body {
   50% {
     transform: translateY(-8px);
   }
+}
+
+/* NETRA: Global dark mode */
+html.dark body {
+  background-color: #0b1220 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Main page and common surfaces */
+html.dark main,
+html.dark .bg-white {
+  background-color: #111827 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-slate-50\/70 {
+  background-color: #172033 !important;
+}
+
+/* Main dashboard cards and borders */
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+/* Headings and body text */
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Search, forms and inputs */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Hover surfaces */
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #263449 !important;
+}
+
+/* Welcome banner */
+html.dark .bg-gradient-to-r {
+  background-image: linear-gradient(
+    to right,
+    #111827,
+    #172033,
+    #1e293b
+  ) !important;
+}
+
+/* Dashboard search field */
+html.dark .bg-\[\#f7fafd\] {
+  background-color: #1e293b !important;
+}
+
+/* Dividers */
+html.dark .divide-slate-100 > :not(:last-child) {
+  border-color: #334155 !important;
+}
+
+/* Calendar and dropdown surfaces */
+html.dark .shadow-xl,
+html.dark .shadow-lg {
+  --tw-shadow-color: rgb(0 0 0 / 0.3);
 }

@@ -5,6 +5,7 @@ import Notifications from "./Notifications";
 import UpcomingSchedule from "./UpcomingSchedule";
 import UploadQuestionPaper from "./UploadQuestionPaper";
 import ExaminationCalendar from "./ExaminationCalendar";
+import ThemeToggle from "../ThemeToggle";
 /*mock data*/
 const examiner = {
   name: "Dr. Arvind Kumar",
@@ -506,8 +507,8 @@ const newPaper = {
           className="h-[42px] w-full rounded-lg border border-[#d5e0eb] bg-[#f7fafd] pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#4d83aa] focus:bg-white focus:ring-2 focus:ring-[#dbeaf5]"
         />
       </div>
-
       <div className="ml-auto flex items-center gap-4">
+              <ThemeToggle />
         {/* Notifications */}
         <div className="relative">
           <button  onClick={() => { setNotificationOpen((v) => !v);setProfileOpen(false);}}
@@ -593,7 +594,6 @@ const newPaper = {
 
             <ChevronDown size={16} className={`hidden text-slate-500 transition sm:block ${profileOpen ? "rotate-180" : ""}`}/>
           </button>
-
           {profileOpen && (
             <div className="absolute right-0 top-14 z-50 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
               <button
@@ -605,11 +605,14 @@ const newPaper = {
               </button>
 
               <div className="my-1 h-px bg-slate-100" />
+              
               <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50">
                 <LogOut size={17} />
                 Logout
               </button>
+          
             </div>
+            
           )}
         </div>
       </div>
