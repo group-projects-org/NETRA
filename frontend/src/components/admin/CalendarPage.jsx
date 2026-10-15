@@ -1,33 +1,15 @@
 import { useMemo } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-
 export default function CalendarPage({
-  calendarEvents,
-  setCalendarEvents,
-  selectedDate,
-  setSelectedDate,
-  eventTitle,
-  setEventTitle,
-  setSchedules,
-}) {
+  calendarEvents,setCalendarEvents,selectedDate,setSelectedDate,eventTitle,setEventTitle,setSchedules,}) {
   const currentDate = new Date();
-
-  const month =
-    selectedDate?.month ??
-    currentDate.getMonth();
-
-  const year =
-    selectedDate?.year ??
-    currentDate.getFullYear();
-
+  const month = selectedDate?.month ??currentDate.getMonth();
+  const year = selectedDate?.year ??currentDate.getFullYear();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const firstDay = new Date(year, month, 1).getDay();
-
   const monthName = new Date(year, month, 1).toLocaleString("en-US", {
     month: "long",
   });
-
   const previousMonth = () => {
     const newDate = new Date(year, month - 1, 1);
 
@@ -209,17 +191,11 @@ const addCalendarEvent = () => {
                 selectedDate?.year === year;
 
               return (
-                <button
-                  key={day}
-                  onClick={() => selectDay(day)}
+                <button key={day} onClick={() => selectDay(day)}
                   className={`min-h-14 rounded-lg border p-2 text-sm transition ${
-                    hasEvent
-                      ? "border-blue-300 bg-blue-50 font-semibold text-blue-700"
-                      : "border-slate-100 text-slate-600 hover:bg-slate-50"
+                    hasEvent? "border-blue-300 bg-blue-50 font-semibold text-blue-700": "border-slate-100 text-slate-600 hover:bg-slate-50"
                   } ${
-                    isSelected
-                      ? "ring-2 ring-blue-400"
-                      : ""
+                    isSelected? "ring-2 ring-blue-400": ""
                   }`}
                 >
                   <div>{day}</div>
@@ -242,23 +218,16 @@ const addCalendarEvent = () => {
 
               <div className="flex flex-col gap-3 sm:flex-row">
 
-                <input
-                  type="text"
-                  value={eventTitle}
-                  onChange={(e) => setEventTitle(e.target.value)}
+                <input type="text" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)}
                   placeholder="Enter paper / exam / important event"
                   className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#4d83aa]"
                 />
 
-                <button
-                  onClick={addCalendarEvent}
-                  className="rounded-lg bg-[#176bb0] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#125b95]"
-                >
+                <button onClick={addCalendarEvent} className="rounded-lg bg-[#176bb0] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#125b95]">
                   Add Event
                 </button>
 
-                <button
-                  onClick={() => {
+                <button onClick={() => {
                     setSelectedDate({
                       day: null,
                       month,

@@ -23,12 +23,7 @@ const initialExaminers = [
     department: "Mathematics",
     status: "Pending",
   },
-  {
-    id: "EXM-20319",
-    name: "Dr. Rahul Verma",
-    department: "Physics",
-    status: "Pending",
-  },
+  
 ];
 
 const initialSchedules = [
@@ -105,37 +100,19 @@ function StatCard({ icon: Icon, count, title, subtitle }) {
 export default function AdminDashboard() {
 const [view, setView] = useState("dashboard");
 const [mobileSidebar, setMobileSidebar] = useState(false);
-const [examiners, setExaminers] = useState(() => {
-  const saved = localStorage.getItem("netra_examiners");
-  return saved ? JSON.parse(saved) : initialExaminers;
-});
-
-useEffect(() => {
-  localStorage.setItem(
-    "netra_examiners",
-    JSON.stringify(examiners)
-  );
-}, [examiners]);
-
+const [examiners, setExaminers] = useState(initialExaminers);
 const [schedules,setSchedules] = useState(initialSchedules);
 const [notifications, setNotifications] = useState(initialNotifications);
-
 const [calendarEvents, setCalendarEvents] = useState([
   {
     id: 1,
     day: 15,
     title: "National Eligibility Test",
   },
-  {
-    id: 2,
-    day: 20,
-    title: "State Services Prelims",
-  },
 ]);
 
 const [selectedDate, setSelectedDate] = useState(null);
 const [eventTitle, setEventTitle] = useState("");
-
   const pendingExaminers = examiners.filter(
     (examiner) => examiner.status === "Pending"
   ).length;
@@ -147,21 +124,15 @@ const [eventTitle, setEventTitle] = useState("");
   const approveExaminer = (id) => {
     setExaminers((current) =>
       current.map((examiner) =>
-        examiner.id === id
-          ? { ...examiner, status: "Approved" }
-          : examiner
-      )
-    );
+        examiner.id === id ? { ...examiner, status: "Approved" } : examiner
+      ));
   };
 
   const rejectExaminer = (id) => {
     setExaminers((current) =>
       current.map((examiner) =>
-        examiner.id === id
-          ? { ...examiner, status: "Rejected" }
-          : examiner
-      )
-    );
+        examiner.id === id ? { ...examiner, status: "Rejected" }: examiner
+      ));
   };
 
   const navigate = (nextView) => {
@@ -172,15 +143,9 @@ const [eventTitle, setEventTitle] = useState("");
   const Sidebar = () => (
     <>
       {mobileSidebar && (
-        <button
-          aria-label="Close sidebar"
-          onClick={() => setMobileSidebar(false)}
-          className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
-        />
+        <button aria-label="Close sidebar" onClick={() => setMobileSidebar(false)} className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"/>
       )}
-
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col bg-[#071c2f] text-white transition-transform duration-200 lg:static lg:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col bg-[#071c2f] text-white transition-transform duration-200 lg:static lg:translate-x-0 ${
           mobileSidebar ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -208,47 +173,17 @@ const [eventTitle, setEventTitle] = useState("");
         {/* Navigation */}
         <nav className="px-4">
           {[
-            {
-              id: "dashboard",
-              label: "Dashboard",
-              icon: LayoutDashboard,
-            },
-            {
-              id: "calendar",
-              label: "Calendar",
-              icon: CalendarDays,
-            },
-            {
-              id: "schedules",
-              label: "Exam Schedule",
-              icon: Clock3,
-            },
-            {
-              id: "examiners",
-              label: "Examiner Approval",
-              icon: UserCheck,
-            },
-            {
-              id: "notifications",
-              label: "Notifications",
-              icon: Bell,
-            },
-            {
-              id: "activity",
-              label: "Activity Log",
-              icon: Activity,
-            },
-          ].map((item) => {
+            {id: "dashboard",label: "Dashboard",icon: LayoutDashboard,},
+            {id: "calendar",label: "Calendar",icon: CalendarDays,},
+            {id: "schedules",label: "Exam Schedule",icon: Clock3,},
+            {id: "examiners",label: "Examiner Approval",icon: UserCheck,},
+            {id: "notifications",label: "Notifications",icon: Bell,},
+            {id: "activity",label: "Activity Log",icon: Activity,},
+          ].map((item) => { 
             const Icon = item.icon;
-
             return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.id)}
-                className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
-                  view === item.id
-                    ? "bg-[#164e7b] text-white shadow-sm"
-                    : "text-slate-300 hover:bg-white/5 hover:text-white"
+              <button key={item.id} onClick={() => navigate(item.id)} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
+                  view === item.id? "bg-[#164e7b] text-white shadow-sm": "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon size={19} strokeWidth={1.8} />
@@ -259,18 +194,14 @@ const [eventTitle, setEventTitle] = useState("");
 
           <div className="my-5 h-px bg-white/10" />
 
-          <button
-            onClick={() => navigate("profile")}
-            className="mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white"
-          >
+          <button onClick={() => navigate("profile")}
+            className="mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
             <Users size={19} />
             <span>Admin Profile</span>
           </button>
 
-          <button
-            onClick={() => navigate("logout")}
-            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white"
-          >
+          <button onClick={() => navigate("logout")}
+          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
             <LogOut size={19} />
             <span>Logout</span>
           </button>
@@ -290,10 +221,7 @@ const [eventTitle, setEventTitle] = useState("");
 
   const Header = () => (
     <header className="flex h-[80px] shrink-0 items-center border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
-      <button
-        onClick={() => setMobileSidebar(true)}
-        className="mr-4 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
-      >
+      <button onClick={() => setMobileSidebar(true)} className="mr-4 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden">
         <Menu size={21} />
       </button>
 
@@ -343,49 +271,20 @@ const [eventTitle, setEventTitle] = useState("");
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={Users}
-          count={examiners.length}
-          title="Total Examiners"
-          subtitle="Registered examiners"
-        />
-
-        <StatCard
-          icon={UserCheck}
-          count={approvedExaminers}
-          title="Approved Examiners"
-          subtitle="Allowed to access portal"
-        />
-
-        <StatCard
-          icon={Clock3}
-          count={pendingExaminers}
-          title="Pending Approvals"
-          subtitle="Needs administrator action"
-        />
-
-        <StatCard
-          icon={CalendarDays}
-          count={schedules.length}
-          title="Upcoming Exams"
-          subtitle="Scheduled examinations"
-        />
-      </div>
+        <StatCard icon={Users} count={examiners.length} title="Total Examiners" subtitle="Registered examiners"/>
+        <StatCard icon={UserCheck} count={approvedExaminers} title="Approved Examiners" subtitle="Allowed to access portal" />
+        <StatCard icon={Clock3} count={pendingExaminers} title="Pending Approvals" subtitle="Needs administrator action"/>
+        <StatCard icon={CalendarDays} count={schedules.length} title="Upcoming Exams" subtitle="Scheduled examinations"/>
+       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         {/* Upcoming exams */}
         <Card>
-          <SectionHeader
-            icon={CalendarDays}
-            title="Upcoming Examinations"
-          />
+          <SectionHeader icon={CalendarDays} title="Upcoming Examinations"/>
 
           <div className="divide-y divide-slate-100">
             {schedules.map((schedule) => (
-              <div
-                key={schedule.id}
-                className="flex flex-wrap items-center justify-between gap-4 p-5"
-              >
+              <div key={schedule.id} className="flex flex-wrap items-center justify-between gap-4 p-5">
                 <div>
                   <div className="text-sm font-semibold text-slate-800">
                     {schedule.examination}
@@ -491,8 +390,7 @@ const [eventTitle, setEventTitle] = useState("");
                   <td className="px-5 py-4">
                     <span
                       className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                        examiner.status === "Approved"
-                          ? "bg-emerald-50 text-emerald-700"
+                        examiner.status === "Approved"? "bg-emerald-50 text-emerald-700"
                           : examiner.status === "Rejected"
                           ? "bg-red-50 text-red-700"
                           : "bg-amber-50 text-amber-700"
@@ -545,13 +443,12 @@ const [eventTitle, setEventTitle] = useState("");
 
 
   const renderPage = () => {
-    switch (view) {
-      case "dashboard":
-        return <Dashboard />;
+      switch (view) {
+      case "dashboard": return <Dashboard />;
 
       case "calendar":
-  return (
-    <CalendarPage
+      return (
+      <CalendarPage
       calendarEvents={calendarEvents}
       setCalendarEvents={setCalendarEvents}
       selectedDate={selectedDate}
@@ -563,26 +460,24 @@ const [eventTitle, setEventTitle] = useState("");
   );
 
       case "schedules":
-  return (
+      return (
     <SchedulePage
       schedules={schedules}
       setSchedules={setSchedules}
     />
   );
 
-      case "examiners":
-        return <ExaminerApproval />;
+      case "examiners":return <ExaminerApproval />;
 
       case "notifications":
-  return (
+      return (
     <NotificationsPage
       notifications={notifications}
       setNotifications={setNotifications}
     />
   );
 
-      default:
-        return <Dashboard />;
+      default: return <Dashboard />;
     }
   };
 

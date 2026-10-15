@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {Activity, AlertCircle, ArrowLeft, Bell, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Circle, Clock3, FileCheck2, FileText, FileUp, Filter, HelpCircle, Info,KeyRound,
-LayoutDashboard, LifeBuoy, LockKeyhole, LogOut, Menu, MoreVertical, Search, Settings, Shield, ShieldCheck, Upload, User,UserCircle, X,} from "lucide-react";
-import UploadQuestionPaper from "./UploadQuestionPaper";
-import RecentPapers from "./RecentPapers";
+LayoutDashboard, LifeBuoy, LockKeyhole, LogOut,BookOpen, Menu, MoreVertical, Search, Settings, Shield, ShieldCheck, Upload, User,UserCircle, X,ClipboardList,CalendarClock,History,} from "lucide-react";
 import Notifications from "./Notifications";
 import UpcomingSchedule from "./UpcomingSchedule";
+import UploadQuestionPaper from "./UploadQuestionPaper";
+import ExaminationCalendar from "./ExaminationCalendar";
 /*mock data*/
 const examiner = {
   name: "Dr. Arvind Kumar",
@@ -55,57 +55,7 @@ const initialPapers = [
     action:
       "Examination schedule does not match the assigned schedule. Please verify and resubmit.",
   },
-  {
-    id: "NETRA-QP-0041",
-    examination: "National Eligibility Test",
-    subject: "Physics",
-    set: "A",
-    date: "15 Nov 2026",
-    shift: "Shift 1",
-    time: "10:00 AM",
-    duration: "3 Hours",
-    stage: "Finalized",
-    updated: "10 Dec 2025",
-    updatedTime: "02:05 PM",
-    file: "net_physics_set_a.pdf",
-    size: "9.2 MB",
-    uploaded: "28 Sep 2026, 10:30 AM",
-    integrity: "Verified",
-  },
-  {
-    id: "NETRA-QP-0040",
-    examination: "State Services Prelims",
-    subject: "Mathematics",
-    set: "A",
-    date: "14 Nov 2026",
-    shift: "Shift 1",
-    time: "10:00 AM",
-    duration: "3 Hours",
-    stage: "Draft",
-    updated: "09 Dec 2025",
-    updatedTime: "11:42 AM",
-    file: "",
-    size: "",
-    uploaded: "",
-    integrity: "Pending",
-  },
-  {
-    id: "NETRA-QP-0039",
-    examination: "Board Annual Examination",
-    subject: "Biology",
-    set: "A",
-    date: "20 Nov 2026",
-    shift: "Shift 1",
-    time: "10:00 AM",
-    duration: "3 Hours",
-    stage: "Finalized",
-    updated: "08 Dec 2025",
-    updatedTime: "03:36 PM",
-    file: "board_biology_set_a.pdf",
-    size: "6.8 MB",
-    uploaded: "25 Sep 2026, 03:10 PM",
-    integrity: "Verified",
-  },
+
 ];
 
 const initialNotifications = [
@@ -125,22 +75,6 @@ const initialNotifications = [
     type: "info",
     unread: true,
   },
-  {
-    id: 3,
-    title: "Examination schedule updated",
-    message: "Schedule for NET 2026 has been released.",
-    time: "Yesterday",
-    type: "success",
-    unread: false,
-  },
-  {
-    id: 4,
-    title: "Your paper has been processed",
-    message: "NETRA-QP-0041 is ready for the next stage.",
-    time: "10 Dec",
-    type: "success",
-    unread: false,
-  },
 ];
 
 const activityData = [
@@ -151,27 +85,7 @@ const activityData = [
     paper: "NETRA-QP-0043",
     result: "Success",
   },
-  {
-    date: "04 Oct 2026",
-    time: "11:44 AM",
-    action: "Integrity verification completed",
-    paper: "NETRA-QP-0043",
-    result: "Verified",
-  },
-  {
-    date: "04 Oct 2026",
-    time: "11:47 AM",
-    action: "Question paper submitted",
-    paper: "NETRA-QP-0043",
-    result: "Success",
-  },
-  {
-    date: "03 Oct 2026",
-    time: "03:18 PM",
-    action: "Paper processing initiated",
-    paper: "NETRA-QP-0041",
-    result: "Success",
-  },
+
   {
     date: "02 Oct 2026",
     time: "10:12 AM",
@@ -179,15 +93,51 @@ const activityData = [
     paper: "—",
     result: "Verified",
   },
+];
+const assignedTasks = [
   {
-    date: "01 Oct 2026",
-    time: "02:14 PM",
-    action: "Question paper uploaded",
-    paper: "NETRA-QP-0042",
-    result: "Success",
+    id: "EX-102",
+    examination: "National Eligibility Test",
+    subject: "Computer Networks",
+    required: 10,
+    completed: 0,
+    deadline: "10 Nov 2026",
+    status: "Not Started",
+  },
+  {
+    id: "EX-103",
+    examination: "State Services Examination",
+    subject: "General Studies",
+    required: 20,
+    completed: 12,
+    deadline: "15 Nov 2026",
+    status: "In Progress",
   },
 ];
 
+const recentActivity = [
+  {
+    id: 1,
+    title: "Question paper uploaded",
+    description: "NETRA-QP-0043 submitted for processing",
+    time: "04 Oct 2026 · 11:42 AM",
+    type: "success",
+  },
+  {
+    id: 2,
+    title: "Assignment received",
+    description: "EX-102 · Computer Networks",
+    time: "03 Oct 2026 · 02:15 PM",
+    type: "info",
+  },
+  {
+    id: 3,
+    title: "Action required",
+    description: "NETRA-QP-0042 needs your attention",
+    time: "02 Oct 2026 · 11:20 AM",
+    type: "warning",
+  },
+];
 
 function StatusBadge({ stage }) {
   const styles = {
@@ -261,62 +211,37 @@ function StatCard({ icon: Icon, count, title, subtitle, tone, onClick }) {
   };
 
   const current = tones[tone];
-
   return (
-    <button
-      onClick={onClick}
-      className={`group rounded-xl border border-slate-200 bg-white p-4 text-left shadow-[0_2px_10px_rgba(15,23,42,0.025)] transition hover:-translate-y-[1px] ${current.border}`}
-    >
+    <button onClick={onClick} className={`group rounded-xl border border-slate-200 bg-white p-4 text-left shadow-[0_2px_10px_rgba(15,23,42,0.025)] transition hover:-translate-y-[1px] ${current.border}`}>
       <div className="flex items-start justify-between">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full ${current.icon}`}
-        >
+        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${current.icon}`}>
           <Icon size={20} />
         </div>
 
-        <ChevronRight
-          size={17}
-          className="mt-1 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500"
-        />
+        <ChevronRight size={17} className="mt-1 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500"/>
       </div>
 
-      <div className="mt-3 text-[28px] font-semibold leading-none text-slate-900">
-        {count}
-      </div>
-
+      <div className="mt-3 text-[28px] font-semibold leading-none text-slate-900">{count} </div>
       <div className="mt-2 text-sm font-semibold text-slate-900">{title}</div>
-
       <div className="mt-1 text-xs text-slate-500">{subtitle}</div>
     </button>
   );
 }
-
 
 export default function ExaminerDashboard() {
   const [view, setView] = useState("dashboard");
   const [papers, setPapers] = useState(initialPapers);
   const [notifications, setNotifications] = useState(() => {
   const saved = localStorage.getItem("netra_notifications");
-
   return saved ? JSON.parse(saved) : initialNotifications;
-});
-
-useEffect(() => {
-  localStorage.setItem(
-    "netra_notifications",
-    JSON.stringify(notifications)
-  );
-}, [notifications]);
-
+  });
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [search, setSearch] = useState("");
   const [paperFilter, setPaperFilter] = useState("All");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
-  const fileRef = useRef(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadMessage, setUploadMessage] = useState("");
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const counts = useMemo(() => {
     return {
       Draft: papers.filter((p) => p.stage === "Draft").length,
@@ -331,10 +256,8 @@ useEffect(() => {
 
   const filteredPapers = useMemo(() => {
     const q = search.toLowerCase().trim();
-
     return papers.filter((paper) => {
       const matchesFilter =paperFilter === "All" || paper.stage === paperFilter;
-
       const matchesSearch = !q || paper.id.toLowerCase().includes(q) || paper.examination.toLowerCase().includes(q) || paper.subject.toLowerCase().includes(q);
       return matchesFilter && matchesSearch;
     });
@@ -355,30 +278,6 @@ useEffect(() => {
     setMobileSidebar(false);
   };
 
-  const handleFile = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (
-      file.type !== "application/pdf" &&
-      !file.name.toLowerCase().endsWith(".pdf")
-    ) {
-      setUploadMessage("Only PDF files are allowed.");
-      setSelectedFile(null);
-      return;
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      setUploadMessage("File size must be below 50 MB.");
-      setSelectedFile(null);
-      return;
-    }
-
-    setSelectedFile(file);
-    setUploadMessage(
-      `${file.name} selected successfully. This is mock upload behavior for now.`
-    );
-  };
-
   const submitMockUpload = (formData) => {
     if (!selectedFile) {
       setUploadMessage("Please select a PDF file first.");
@@ -397,18 +296,6 @@ const selectedSchedule = {
     time: "02:00 PM",
     duration: "3 Hours",
   },
-  "schedule-3": {
-    date: "15 Nov 2026",
-    shift: "Shift 1",
-    time: "10:00 AM",
-    duration: "3 Hours",
-  },
-  "schedule-4": {
-    date: "20 Nov 2026",
-    shift: "Shift 1",
-    time: "10:00 AM",
-    duration: "3 Hours",
-  },
 }[formData.schedule];
 
 const newPaper = {
@@ -417,19 +304,14 @@ const newPaper = {
   examination: formData.examination,
   subject: formData.subject,
   set: formData.set,
-
   date: selectedSchedule.date,
   shift: selectedSchedule.shift,
   time: selectedSchedule.time,
   duration: selectedSchedule.duration,
-
   language: formData.language,
-
   stage: "Submitted",
-
   updated: "05 Oct 2026",
   updatedTime: "Now",
-
   file: selectedFile.name,
   size: `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB`,
   uploaded: "05 Oct 2026, Now",
@@ -452,14 +334,12 @@ const newPaper = {
     const confirmed = window.confirm(
       "Are you sure you want to sign out of N.E.T.R.A.?"
     );
-
     if (confirmed) {
       setView("logout");
     }
   };
 
   const unreadNotifications = notifications.filter((n) => n.unread).length;
-
   const markNotificationsRead = () => {
     setNotifications((current) =>
       current.map((item) => ({
@@ -475,6 +355,11 @@ const newPaper = {
       label: "Dashboard",
       icon: LayoutDashboard,
     },
+     {
+      id: "create-questions",
+      label: "Create Questions",
+      icon: BookOpen,
+    },
     {
       id: "papers",
       label: "My Papers",
@@ -484,8 +369,7 @@ const newPaper = {
       id: "activity",
       label: "Activity Log",
       icon: Activity,
-    },
-  
+    }, 
   ];
 
   const secondaryNav = [
@@ -503,11 +387,9 @@ const newPaper = {
 
   const isActive = (id) => {
     if (id === "dashboard") return view === "dashboard";
-
     if (id === "papers") {
       return view === "papers" || view === "paper-detail";
     }
-
     return view === id;
   };
 
@@ -553,15 +435,10 @@ const newPaper = {
             const Icon = item.icon;
 
             return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.id)}
+              <button key={item.id} onClick={() => navigate(item.id)}
                 className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
-                  isActive(item.id)
-                    ? "bg-[#164e7b] text-white shadow-sm"
-                    : "text-slate-300 hover:bg-white/5 hover:text-white"
-                }`}
-              >
+                  isActive(item.id) ? "bg-[#164e7b] text-white shadow-sm": "text-slate-300 hover:bg-white/5 hover:text-white"
+                }`} >
                 <Icon size={19} strokeWidth={1.8} />
                 <span>{item.label}</span>
               </button>
@@ -569,30 +446,20 @@ const newPaper = {
           })}
 
           <div className="my-5 h-px bg-white/10" />
-
           {secondaryNav.map((item) => {
             const Icon = item.icon;
 
             return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.id)}
-                className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
-                  isActive(item.id)
-                    ? "bg-[#164e7b] text-white"
-                    : "text-slate-300 hover:bg-white/5 hover:text-white"
-                }`}
-              >
+              <button key={item.id} onClick={() => navigate(item.id)} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
+                  isActive(item.id) ? "bg-[#164e7b] text-white": "text-slate-300 hover:bg-white/5 hover:text-white"
+                }`} >
                 <Icon size={19} strokeWidth={1.8} />
                 <span>{item.label}</span>
               </button>
             );
           })}
 
-          <button
-            onClick={handleLogout}
-            className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
-          >
+          <button onClick={handleLogout} className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white">
             <LogOut size={19} strokeWidth={1.8} />
             <span>Logout</span>
           </button>
@@ -618,8 +485,6 @@ const newPaper = {
       </aside>
     </>
   );
-
-
   const Header = () => (
     <header className="relative flex h-[80px] shrink-0 items-center border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
       <button onClick={() => setMobileSidebar(true)}
@@ -630,10 +495,7 @@ const newPaper = {
 
       {/* Search */}
       <div className="relative w-full max-w-[520px]">
-        <Search
-          size={18}
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#46718f]"
-        />
+        <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#46718f]"/>
 
         <input value={search} onChange={(e) => { setSearch(e.target.value);
          if (view !== "papers") {
@@ -666,22 +528,16 @@ const newPaper = {
                   Notifications
                 </div>
 
-                <button
-                  onClick={markNotificationsRead}
-                  className="text-xs font-medium text-[#1264a3]"
-                >
+                <button onClick={markNotificationsRead} className="text-xs font-medium text-[#1264a3]">
                   Mark all as read
                 </button>
               </div>
 
               <div className="max-h-[380px] overflow-y-auto">
                 {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`border-b border-slate-100 px-4 py-3 last:border-0 ${
+                  <div key={notification.id} className={`border-b border-slate-100 px-4 py-3 last:border-0 ${
                       notification.unread ? "bg-[#f8fbfe]" : ""
-                    }`}
-                  >
+                    }`}>
                     <div className="flex gap-3">
                       <div
                         className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -690,8 +546,7 @@ const newPaper = {
                             : notification.type === "info"
                             ? "bg-blue-500"
                             : "bg-emerald-500"
-                        }`}
-                      />
+                        }`}/>
 
                       <div className="min-w-0">
                         <div className="flex justify-between gap-3">
@@ -736,12 +591,7 @@ const newPaper = {
               </div>
             </div>
 
-            <ChevronDown
-              size={16}
-              className={`hidden text-slate-500 transition sm:block ${
-                profileOpen ? "rotate-180" : ""
-              }`}
-            />
+            <ChevronDown size={16} className={`hidden text-slate-500 transition sm:block ${profileOpen ? "rotate-180" : ""}`}/>
           </button>
 
           {profileOpen && (
@@ -754,20 +604,8 @@ const newPaper = {
                 My Profile
               </button>
 
-              {/* <button
-                onClick={() => navigate("security")}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                <Settings size={17} />
-                Security
-              </button> */}
-
               <div className="my-1 h-px bg-slate-100" />
-
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50"
-              >
+              <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50">
                 <LogOut size={17} />
                 Logout
               </button>
@@ -777,66 +615,171 @@ const newPaper = {
       </div>
     </header>
   );
-
-
-  const Dashboard = () => (
-    <div className="space-y-5">
-      {/* Welcome */}
-      <div className="relative overflow-hidden rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white via-white to-[#edf6fc] px-6 py-5">
-        <div className="relative z-10">
-          <h1 className="text-[25px] font-semibold tracking-tight text-[#071a3d]">
-            Good Morning, Dr. Arvind Kumar
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Manage and submit your question papers securely through N.E.T.R.A.
-          </p>
-        </div>
-        <div className="absolute -right-10 -top-20 h-48 w-[420px] rounded-[50%] border border-[#d5e8f5] opacity-70" />
-        <div className="absolute right-20 top-4 h-32 w-64 rounded-[50%] border border-[#d5e8f5] opacity-60" />
-        <div className="absolute right-6 top-5 hidden text-xs text-slate-500 md:block">
-          04 October 2026, Sunday
-        </div>
+ const Dashboard = () => (
+  <div className="space-y-5">
+    {/* Welcome banner */}
+    <div className="relative overflow-hidden rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white via-white to-[#edf6fc] px-6 py-5">
+      <div className="relative z-10">
+        <h1 className="text-[25px] font-semibold tracking-tight text-[#071a3d]">
+          Good Morning, Dr. Arvind Kumar
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Track your assigned examinations, deadlines, and submission progress.
+        </p>
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={FileText} count={counts.Draft} title="Draft Papers" subtitle="Not yet submitted" tone="blue" onClick={() => { setPaperFilter("Draft"); setView("papers"); }} />
-        <StatCard icon={Clock3} count={counts.Submitted} title="Submitted Papers" subtitle="Under system processing" tone="amber" onClick={() => { setPaperFilter("Submitted"); setView("papers"); }} />
-        <StatCard icon={FileCheck2} count={counts.Finalized} title="Finalized Papers" subtitle="Ready for scheduled release" tone="green" onClick={() => { setPaperFilter("Finalized"); setView("papers"); }} />
-        <StatCard icon={AlertCircle} count={counts.Action} title="Action Required" subtitle="Needs your attention" tone="purple" onClick={() => { setPaperFilter("Action Required"); setView("papers"); }} />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_328px]">
-        <div className="space-y-5">
-          <UploadQuestionPaper
-            Card={Card}
-            SectionHeader={SectionHeader}
-            fileRef={fileRef}
-            selectedFile={selectedFile}
-            handleFile={handleFile}
-            submitMockUpload={submitMockUpload}
-            uploadMessage={uploadMessage}
-          />
-
-        
-        </div>
-
-        <div className="space-y-5">
-          <Notifications
-            Card={Card}
-            SectionHeader={SectionHeader}
-            notifications={notifications}
-            setNotificationOpen={setNotificationOpen}
-          />
-          <UpcomingSchedule
-            Card={Card}
-            SectionHeader={SectionHeader}
-            navigate={navigate}
-          />
-        </div>
+      <div className="absolute -right-10 -top-20 h-48 w-[420px] rounded-[50%] border border-[#d5e8f5] opacity-70" />
+      <div className="absolute right-20 top-4 h-32 w-64 rounded-[50%] border border-[#d5e8f5] opacity-60" />
+      <div className="absolute right-6 top-5 hidden text-xs text-slate-500 md:block">
+        04 October 2026, Sunday
       </div>
     </div>
-  );
+
+    {/* Summary cards */}
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard icon={FileText} count={counts.Draft} title="Draft Papers" subtitle="Not yet submitted" tone="blue" onClick={() => { setPaperFilter("Draft"); setView("papers"); }} />
+      <StatCard icon={Clock3} count={counts.Submitted} title="Submitted Papers" subtitle="Under system processing" tone="amber" onClick={() => { setPaperFilter("Submitted"); setView("papers"); }} />
+      <StatCard icon={FileCheck2} count={counts.Finalized} title="Finalized Papers" subtitle="Ready for scheduled release" tone="green" onClick={() => { setPaperFilter("Finalized"); setView("papers"); }} />
+      <StatCard icon={AlertCircle} count={counts.Action} title="Action Required" subtitle="Needs your attention" tone="purple" onClick={() => { setPaperFilter("Action Required"); setView("papers"); }} />
+    </div>
+
+    {/* Main dashboard layout */}
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+  {/* Left column: Assigned Tasks + Recent Activity */}
+  <div className="space-y-5">
+    {/* Assigned Tasks */}
+    <Card className="overflow-hidden">
+      <SectionHeader icon={ClipboardList} title="Assigned Tasks" />
+
+      <div className="divide-y divide-slate-100">
+        {(showAllTasks ? assignedTasks : assignedTasks.slice(0, 2)).map((task) => {
+          const progress = Math.min(100, Math.round((task.completed / task.required) * 100));
+          const completed = task.completed >= task.required;
+
+          return (
+            <div key={task.id} className="p-5 transition hover:bg-slate-50/70">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-[#1765a0]">{task.id}</span>
+                    <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${completed ? "bg-emerald-50 text-emerald-700" : task.completed > 0 ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
+                      {completed ? "Completed" : task.status}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-2 text-sm font-semibold text-slate-900">{task.examination}</h3>
+                  <p className="mt-1 text-xs text-slate-500">Subject: {task.subject}</p>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-xs text-slate-500">Deadline</p>
+                  <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold text-slate-700">
+                    <CalendarClock size={14} className="text-amber-600" />
+                    {task.deadline}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-500">Question completion</span>
+                  <span className="font-semibold text-slate-700">{task.completed} of {task.required}</span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-blue-600"}`} style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button type="button" onClick={() => navigate("create-questions")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#1765a0] transition hover:border-blue-200 hover:bg-blue-50">
+                  {completed ? "View assignment" : "Continue assignment"}
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-5 py-3">
+        <p className="text-xs text-slate-500">
+          Showing {Math.min(showAllTasks ? assignedTasks.length : 2, assignedTasks.length)} of {assignedTasks.length} assignments
+        </p>
+
+        {assignedTasks.length > 2 && (
+          <button type="button" onClick={() => setShowAllTasks((current) => !current)} className="inline-flex items-center gap-1 text-xs font-semibold text-[#1264a3] hover:text-[#0b4b7a]">
+            {showAllTasks ? "Show fewer" : "View all assignments"}
+            <ChevronRight size={14} />
+          </button>
+        )}
+      </div>
+    </Card>
+
+    {/* Recent Activity */}
+    <Card className="overflow-hidden">
+      <SectionHeader icon={History} title="Recent Activity" />
+
+      <div className="divide-y divide-slate-100">
+        {recentActivity.slice(0, 4).map((item) => (
+          <div key={item.id} className="flex gap-3 px-4 py-4">
+            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${item.type === "success" ? "bg-emerald-500" : item.type === "warning" ? "bg-amber-500" : "bg-blue-500"}`} />
+
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-800">{item.title}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{item.description}</p>
+              <p className="mt-1.5 text-[10px] text-slate-400">{item.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button type="button" onClick={() => navigate("activity")} className="flex w-full items-center justify-center gap-1 border-t border-slate-100 px-4 py-3 text-xs font-semibold text-[#1264a3] transition hover:bg-slate-50">
+        View activity log <ChevronRight size={14} />
+      </button>
+    </Card>
+  </div>
+
+  {/* Right column: Schedule + Deadlines + Calendar */}
+  <div className="space-y-5">
+    <UpcomingSchedule Card={Card} SectionHeader={SectionHeader} navigate={navigate} />
+
+    {/* Upcoming Deadlines */}
+    <Card className="overflow-hidden">
+      <SectionHeader icon={CalendarClock} title="Upcoming Deadlines" />
+
+      <div className="space-y-4 p-5">
+        {assignedTasks
+          .filter((task) => task.completed < task.required)
+          .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+          .slice(0, 3)
+          .map((task) => (
+            <div key={task.id} className="flex gap-3">
+              <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
+                <span className="text-[9px] font-semibold uppercase text-slate-500">{task.deadline.split(" ")[1]}</span>
+                <span className="text-sm font-bold text-slate-800">{task.deadline.split(" ")[0]}</span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-800">{task.subject}</p>
+                <p className="mt-1 text-xs text-slate-500">{task.id} · Due {task.deadline}</p>
+                <p className="mt-1 text-xs font-medium text-amber-700">{task.required - task.completed} questions remaining</p>
+              </div>
+            </div>
+          ))}
+
+        {assignedTasks.every((task) => task.completed >= task.required) && (
+          <p className="py-3 text-sm text-slate-500">No pending assignment deadlines.</p>
+        )}
+      </div>
+    </Card>
+
+   <ExaminationCalendar />
+
+      </div>
+  </div>
+</div>
+
+);
 
   const MyPapers = () => (
     <div className="space-y-5">
@@ -854,15 +797,9 @@ const newPaper = {
       <Card>
         <div className="flex flex-col gap-4 border-b border-slate-100 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full max-w-md">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+            <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
 
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search paper ID, examination, subject..."
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search paper ID, examination, subject..."
               className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-[#4d83aa] focus:bg-white focus:ring-2 focus:ring-[#e2eef7]"
             />
           </div>
@@ -916,19 +853,15 @@ const newPaper = {
                   <td className="px-5 py-4 text-xs font-semibold text-slate-800">
                     {paper.id}
                   </td>
-
                   <td className="px-5 py-4 text-xs text-slate-600">
                     {paper.examination}
                   </td>
-
                   <td className="px-5 py-4 text-xs text-slate-600">
                     {paper.subject}
                   </td>
-
                   <td className="px-5 py-4 text-xs text-slate-600">
                     {paper.set}
                   </td>
-
                   <td className="px-5 py-4 text-xs text-slate-600">
                     <div>{paper.date}</div>
                     <div className="mt-1 text-[10px] text-slate-400">
@@ -945,10 +878,7 @@ const newPaper = {
                   </td>
 
                   <td className="px-5 py-4">
-                    <button
-                      onClick={() => openPaper(paper)}
-                      className="flex items-center gap-1 text-xs font-medium text-[#1264a3] hover:text-[#0a4c79]"
-                    >
+                    <button onClick={() => openPaper(paper)} className="flex items-center gap-1 text-xs font-medium text-[#1264a3] hover:text-[#0a4c79]" >
                       View
                       <ChevronRight size={14} />
                     </button>
@@ -979,19 +909,14 @@ const newPaper = {
     </div>
   );
 
-
-
   const PaperDetail = () => {
     if (!selectedPaper) return null;
-
     const isActionRequired =
       selectedPaper.stage === "Action Required";
 
     return (
       <div className="space-y-5">
-        <button
-          onClick={() => setView("papers")}
-          className="flex items-center gap-2 text-sm font-medium text-[#1264a3] hover:text-[#0b4b7a]"
+        <button onClick={() => setView("papers")} className="flex items-center gap-2 text-sm font-medium text-[#1264a3] hover:text-[#0b4b7a]"
         >
           <ArrowLeft size={16} />
           My Question Papers
@@ -1030,10 +955,7 @@ const newPaper = {
                   {selectedPaper.action}
                 </p>
 
-                <button
-                  onClick={() => setView("dashboard")}
-                  className="mt-3 rounded-md bg-violet-600 px-4 py-2 text-xs font-medium text-white hover:bg-violet-700"
-                >
+                <button onClick={() => setView("dashboard")} className="mt-3 rounded-md bg-violet-600 px-4 py-2 text-xs font-medium text-white hover:bg-violet-700" >
                   Return to Dashboard
                 </button>
               </div>
@@ -1416,10 +1338,7 @@ const newPaper = {
           You have been signed out of the N.E.T.R.A. Examiner Portal.
         </p>
 
-        <button
-          onClick={() => navigate("dashboard")}
-          className="mt-6 rounded-md bg-[#176bb0] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#125b95]"
-        >
+        <button onClick={() => navigate("dashboard")}className="mt-6 rounded-md bg-[#176bb0] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#125b95]">
           Sign In Again
         </button>
       </Card>
@@ -1436,6 +1355,8 @@ const newPaper = {
 
       case "paper-detail":
         return <PaperDetail />;
+      case "create-questions":
+      return <UploadQuestionPaper embedded />;
 
       case "activity":
         return <ActivityLog />;
@@ -1456,13 +1377,13 @@ const newPaper = {
 
   return (
     <div className="min-h-screen bg-[#f4f7fa] text-slate-900">
-      <div className="flex min-h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Header />
 
-          <main className="flex-1 overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+         <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
             <div className="mx-auto w-full max-w-[1450px]">
               {renderPage()}
             </div>
