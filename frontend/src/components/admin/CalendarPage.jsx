@@ -119,7 +119,7 @@ const addCalendarEvent = () => {
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.03)]">
+      <div className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.03)]">
 
         {/* Calendar Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -151,10 +151,10 @@ const addCalendarEvent = () => {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-5">
 
           {/* Week Days */}
-          <div className="grid grid-cols-7 gap-2 text-center text-xs">
+          <div className="grid grid-cols-7 gap-1.5 text-center text-xs">
             {[
               "Sun",
               "Mon",
@@ -178,7 +178,7 @@ const addCalendarEvent = () => {
                 return (
                   <div
                     key={`empty-${index}`}
-                    className="min-h-14"
+                    className="min-h-12"
                   />
                 );
               }
@@ -193,7 +193,7 @@ const addCalendarEvent = () => {
 
               return (
                 <button key={day} onClick={() => selectDay(day)}
-                  className={`min-h-14 rounded-lg border p-2 text-sm transition ${
+                  className={`min-h-12 rounded-lg border p-2 text-sm transition ${
                     hasEvent? "border-blue-300 bg-blue-50 font-semibold text-blue-700": "border-slate-100 text-slate-600 hover:bg-slate-50"
                   } ${
                     isSelected? "ring-2 ring-blue-400": ""

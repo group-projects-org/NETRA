@@ -443,6 +443,140 @@ const [eventTitle, setEventTitle] = useState("");
   );
 
 
+  const ActivityLog = () => {
+    const activityData = [
+      {
+        date: "15 Oct 2026",
+        time: "09:30 AM",
+        action: "Admin dashboard accessed",
+        result: "Successful",
+      },
+      {
+        date: "15 Oct 2026",
+        time: "09:45 AM",
+        action: "Examiner approval reviewed",
+        result: "Successful",
+      },
+      {
+        date: "15 Oct 2026",
+        time: "10:00 AM",
+        action: "Examination schedule viewed",
+        result: "Successful",
+      },
+    ];
+
+    return (
+      <div className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">
+            Activity Log
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Review administrative activities in the N.E.T.R.A. portal.
+          </p>
+        </div>
+
+        <Card className="overflow-hidden">
+          <SectionHeader
+            icon={Activity}
+            title="Recent Admin Activities"
+          />
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-[#fbfcfe] text-xs text-slate-500">
+                  <th className="px-5 py-3 font-medium">Date</th>
+                  <th className="px-5 py-3 font-medium">Time</th>
+                  <th className="px-5 py-3 font-medium">Activity</th>
+                  <th className="px-5 py-3 font-medium">Result</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {activityData.map((item, index) => (
+                  <tr
+                    key={index}
+                    className="border-b border-slate-100 last:border-0"
+                  >
+                    <td className="px-5 py-4 text-xs text-slate-600">
+                      {item.date}
+                    </td>
+                    <td className="px-5 py-4 text-xs text-slate-500">
+                      {item.time}
+                    </td>
+                    <td className="px-5 py-4 text-xs font-medium text-slate-800">
+                      {item.action}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                        {item.result}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
+  
+  const ProfilePage = () => (
+    <div className="mx-auto max-w-3xl space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">
+          Admin Profile
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          View your N.E.T.R.A. administrator account information.
+        </p>
+      </div>
+
+      <Card>
+        <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 p-6">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#3e6484] text-xl font-semibold text-white">
+            NA
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">
+              {admin.name}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {admin.role} • {admin.id}
+            </p>
+            <span className="mt-3 inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+              Administrator Account
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2">
+          {[
+            ["Administrator ID", admin.id],
+            ["Full Name", admin.name],
+            ["Role", admin.role],
+            ["Portal", "N.E.T.R.A. Admin Portal"],
+            ["Access Level", "Administrative"],
+            ["Account Type", "Admin"],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                {label}
+              </div>
+              <div className="mt-1.5 text-sm font-medium text-slate-800">
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+
   const renderPage = () => {
       switch (view) {
       case "dashboard": return <Dashboard />;
@@ -477,6 +611,14 @@ const [eventTitle, setEventTitle] = useState("");
       setNotifications={setNotifications}
     />
   );
+
+  
+case "activity":
+  return <ActivityLog />;
+
+case "profile":
+  return <ProfilePage />;
+
 
       default: return <Dashboard />;
     }
