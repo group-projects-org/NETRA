@@ -139,7 +139,16 @@ const [eventTitle, setEventTitle] = useState("");
     setView(nextView);
     setMobileSidebar(false);
   };
+  
+  const handleLogout = () => {
+  const confirmed = window.confirm(
+    "Are you sure you want to sign out of N.E.T.R.A.?"
+  );
 
+  if (confirmed) {
+    window.location.href = "/";
+  }
+};
   const Sidebar = () => (
     <>
       {mobileSidebar && (
@@ -200,9 +209,8 @@ const [eventTitle, setEventTitle] = useState("");
             <span>Admin Profile</span>
           </button>
 
-          <button onClick={() => navigate("logout")}
-          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
-            <LogOut size={19} />
+         <button onClick={handleLogout} className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white">
+            <LogOut size={19} strokeWidth={1.8} />
             <span>Logout</span>
           </button>
         </nav>

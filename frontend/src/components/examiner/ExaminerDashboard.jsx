@@ -332,13 +332,13 @@ const newPaper = {
   };
 
   const handleLogout = () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to sign out of N.E.T.R.A.?"
-    );
-    if (confirmed) {
-      setView("logout");
-    }
-  };
+  const confirmed = window.confirm(
+    "Are you sure you want to sign out of N.E.T.R.A.?"
+  );
+  if (confirmed) {
+    window.location.href = "/";
+  }
+};
 
   const unreadNotifications = notifications.filter((n) => n.unread).length;
   const markNotificationsRead = () => {
