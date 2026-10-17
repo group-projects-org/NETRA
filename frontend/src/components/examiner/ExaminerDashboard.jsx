@@ -6,6 +6,7 @@ import UpcomingSchedule from "./UpcomingSchedule";
 import UploadQuestionPaper from "./UploadQuestionPaper";
 import ExaminationCalendar from "./ExaminationCalendar";
 import ThemeToggle from "../ThemeToggle";
+import ExaminerProfile from "./ExaminerProfile";
 /*mock data*/
 const examiner = {
   name: "Dr. Arvind Kumar",
@@ -571,7 +572,7 @@ const newPaper = {
           )}
         </div>
 
-        {/* Profile */}
+
         <div className="relative">
           <button onClick={() => {
               setProfileOpen((v) => !v);
@@ -580,12 +581,12 @@ const newPaper = {
             className="flex items-center gap-3 rounded-lg px-1.5 py-1.5 transition hover:bg-slate-50"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3e6484] text-sm font-semibold text-white">
-              AK
+             {examiner.name.charAt(0)}
             </div>
 
             <div className="hidden text-left sm:block">
               <div className="text-sm font-semibold text-slate-900">
-                Dr. Arvind Kumar
+                {examiner.name}
               </div>
               <div className="text-xs text-slate-500">
                 Examiner <span className="mx-1">•</span> {examiner.id}
@@ -624,7 +625,7 @@ const newPaper = {
     <div className="relative overflow-hidden rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white via-white to-[#edf6fc] px-6 py-5">
       <div className="relative z-10">
         <h1 className="text-[25px] font-semibold tracking-tight text-[#071a3d]">
-          Good Morning, Dr. Arvind Kumar
+          Good Morning, {examiner.name}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Track your assigned examinations, deadlines, and submission progress.
@@ -633,7 +634,7 @@ const newPaper = {
       <div className="absolute -right-10 -top-20 h-48 w-[420px] rounded-[50%] border border-[#d5e8f5] opacity-70" />
       <div className="absolute right-20 top-4 h-32 w-64 rounded-[50%] border border-[#d5e8f5] opacity-60" />
       <div className="absolute right-6 top-5 hidden text-xs text-slate-500 md:block">
-        04 October 2026, Sunday
+        {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
       </div>
     </div>
 
@@ -1176,67 +1177,6 @@ const newPaper = {
     </div>
   );
 
-
-  const ProfilePage = () => (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">
-          Profile
-        </h1>
-
-        <p className="mt-1 text-sm text-slate-500">
-          View your examiner account information.
-        </p>
-      </div>
-
-      <Card>
-        <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 p-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#3e6484] text-xl font-semibold text-white">
-            AK
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">
-              {examiner.name}
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              {examiner.role} • {examiner.id}
-            </p>
-
-            <span className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-              <CheckCircle2 size={13} />
-              Account Active
-            </span>
-          </div>
-        </div>
-
-        <div className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2">
-          {[
-            ["Examiner ID", examiner.id],
-            ["Role", examiner.role],
-            ["Organization", examiner.organization],
-            ["Department", examiner.department],
-            ["Email", examiner.email],
-            ["Phone", examiner.phone],
-            ["Account Status", examiner.status],
-            ["Last Login", examiner.lastLogin],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                {label}
-              </div>
-
-              <div className="mt-1.5 text-sm font-medium text-slate-800">
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-
   const HelpPage = () => {
     const faqs = [
       [
@@ -1365,7 +1305,7 @@ const newPaper = {
         return <ActivityLog />;
 
       case "profile":
-        return <ProfilePage />;
+        return <ExaminerProfile examiner={examiner}  />;
 
       case "help":
         return <HelpPage />;

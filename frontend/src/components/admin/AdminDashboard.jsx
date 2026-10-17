@@ -4,8 +4,9 @@ import SchedulePage from "./SchedulePage";
 import NotificationsPage from "./NotificationsPage";
 import {Activity,Bell,CalendarDays,CheckCircle2,ChevronRight,Clock3,FileText,LayoutDashboard,LogOut,Menu,Shield,UserCheck,Users,X,} from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
+import AdminProfile from "./AdminProfile";
 const admin = {
-  name: "N.E.T.R.A. Administrator",
+  name: "Mr. John Doe",
   id: "ADM-00001",
   role: "Administrator",
 };
@@ -268,7 +269,7 @@ const [eventTitle, setEventTitle] = useState("");
       <div className="relative overflow-hidden rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white via-white to-[#edf6fc] px-6 py-5">
         <div className="relative z-10">
           <h1 className="text-[25px] font-semibold tracking-tight text-[#071a3d]">
-            Welcome, Administrator
+            Welcome, {admin.name}
           </h1>
 
           <p className="mt-1 text-sm text-slate-500">
@@ -532,58 +533,6 @@ const [eventTitle, setEventTitle] = useState("");
   };
 
   
-  const ProfilePage = () => (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">
-          Admin Profile
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          View your N.E.T.R.A. administrator account information.
-        </p>
-      </div>
-
-      <Card>
-        <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 p-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#3e6484] text-xl font-semibold text-white">
-            NA
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">
-              {admin.name}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {admin.role} • {admin.id}
-            </p>
-            <span className="mt-3 inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-              Administrator Account
-            </span>
-          </div>
-        </div>
-
-        <div className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2">
-          {[
-            ["Administrator ID", admin.id],
-            ["Full Name", admin.name],
-            ["Role", admin.role],
-            ["Portal", "N.E.T.R.A. Admin Portal"],
-            ["Access Level", "Administrative"],
-            ["Account Type", "Admin"],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                {label}
-              </div>
-              <div className="mt-1.5 text-sm font-medium text-slate-800">
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
 
   const renderPage = () => {
       switch (view) {
@@ -625,7 +574,7 @@ case "activity":
   return <ActivityLog />;
 
 case "profile":
-  return <ProfilePage />;
+  return <AdminProfile admin={admin} />;
 
 
       default: return <Dashboard />;
