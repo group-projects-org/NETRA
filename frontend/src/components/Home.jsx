@@ -1,6 +1,6 @@
 import {ArrowRight,BarChart3,Fingerprint,LockKeyhole,MapPin,Printer,ShieldCheck,Clock3,UserRound,} from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 function Home() {
   const navigate = useNavigate();
   return (
@@ -20,21 +20,28 @@ function Home() {
               </p>
             </div>
           </div>
-          <div className="hidden items-center gap-8 lg:flex">
-            <a href="#home" className="relative text-sm text-white">
-              Home
-              <span className="absolute -bottom-3 left-0 h-px w-full bg-sky-300" />
-            </a>
-            <a href="#how-it-works" className="text-sm text-slate-300 transition hover:text-white">
-              How It Works
-            </a>
-            <a href="#features" className="text-sm text-slate-300 transition hover:text-white">
-              Features
-            </a>
-            <a href="#contact" className="text-sm text-slate-300 transition hover:text-white">
-              Contact
-            </a>
-          </div>
+          
+        <div className="hidden items-center gap-8 lg:flex">
+         <Link to="/" className="text-sm text-white">
+          Home
+         </Link>
+
+         <Link to="/how-it-works" className="text-sm text-slate-300 transition hover:text-white">
+           How It Works
+         </Link>
+
+         <Link to="/features" className="text-sm text-slate-300 transition hover:text-white">
+          Features
+         </Link>
+
+         <Link to="/about" className="text-sm text-slate-300 transition hover:text-white">
+          About Us
+         </Link>
+
+        <Link to="/contact" className="text-sm text-slate-300 transition hover:text-white">
+          Contact
+        </Link>
+        </div>
 
           <button onClick={() => navigate("/login")}
             className="flex items-center gap-2 rounded-md border border-white/25 bg-white/5 px-5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition hover:border-white/40 hover:bg-white/10">
