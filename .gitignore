@@ -27,6 +27,7 @@ env/
 # Python tooling
 .pytest_cache/
 .mypy_cache/
+*.egg-info/
 
 # Logs
 *.log
@@ -60,3 +61,8 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+*.sql
+
+# Bacckend Reports and Supporting Files
+reports/
+*.pdf

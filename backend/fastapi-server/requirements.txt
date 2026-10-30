@@ -1,0 +1,10 @@
+PyMuPDF>=1.24.0
+reedsolo>=1.7.0
+numpy>=1.26.0
+opencv-python>=4.9.0
+scipy>=1.11.0
+python-dotenv>=1.0.0
+pytest>=8.0.0
+
+# Install this project in editable mode (provides the netra-encode command).
+-e .

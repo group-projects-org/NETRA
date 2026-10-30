@@ -6,7 +6,7 @@ decoder lives here, so all sides are guaranteed to agree on the format.
 The HMAC key is read from ``NETRA_STEG_SECRET``. If that is not already set in
 the environment, it is loaded from the nearest ``.env`` file: first searching
 upward from the current directory, then upward from this package (which finds
-``backend/.env``). Variables that are already set are never overwritten.
+``fastapi-server/.env``). Variables that are already set are never overwritten.
 """
 
 from __future__ import annotations
@@ -140,7 +140,7 @@ def resolve_secret(secret: str | bytes | None = None) -> bytes:
         if not secret:
             raise ConfigError(
                 f"No secret supplied and {SECRET_ENV_VAR} is not set "
-                f"(add it to backend/.env; see backend/.env.example)"
+                f"(add it to fastapi-server/.env; see fastapi-server/.env.example)"
             )
     key = secret.encode("utf-8") if isinstance(secret, str) else bytes(secret)
     if len(key) < MIN_SECRET_BYTES:
