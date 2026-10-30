@@ -3,6 +3,6 @@ POST http://localhost:5001/api/auth/examiner/login
 Content-Type: application/json
 
 {
-  "examinerId": "NETRA-17266975",
-  "password": "tJPqBg42McVM9Uuh"
+  "examinerId": "NETRA-86221377",
+  "password": "KmQ4_w754Qt9ubCn"
 }
