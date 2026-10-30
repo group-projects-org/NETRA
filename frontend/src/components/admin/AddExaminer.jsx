@@ -82,7 +82,7 @@ export default function AddExaminer() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5001/api/admin/examiners/add",
+        `${import.meta.env.VITE_NODE_API_URL}/api/admin/examiners/add`,
         {
           method: "POST",
           headers: {

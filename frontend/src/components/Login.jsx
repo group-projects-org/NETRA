@@ -38,7 +38,7 @@ function Login() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5001/api/auth/examiner/login",
+        `${import.meta.env.VITE_NODE_API_URL}/api/auth/examiner/login`,
         {
           method: "POST",
           headers: {

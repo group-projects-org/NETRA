@@ -1,9 +1,15 @@
 from contextlib import asynccontextmanager
+import os
+from pathlib import Path
+
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from routes.health import router as health_router
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,7 +19,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NETRA API", description="Backend API Service", version="1.0.0", lifespan=lifespan)
 
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:5173")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

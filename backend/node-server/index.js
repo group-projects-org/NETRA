@@ -11,8 +11,9 @@ const authRoutes = require("./routes/authRoutes");
 const db = require("./db");
 
 const app = express();
+const allowedOrigins = [process.env.FRONTEND_URL || "http://localhost:5173"];
 
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get("/", (req, res) => {

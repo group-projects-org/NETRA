@@ -24,10 +24,11 @@ Each component has its own dependencies and can be installed independently. Run 
 ```powershell
 cd frontend
 npm ci
+Copy-Item .env.example .env
 npm run dev
 ```
 
-Vite prints the local URL when it starts (normally `http://localhost:5173`). The current frontend calls the Node.js API at `http://localhost:5001`.
+Vite prints the local URL when it starts (normally `http://localhost:5173`). Set `VITE_NODE_API_URL` and `VITE_FASTAPI_API_URL` in `frontend/.env` to the deployed API origins; the example uses the local development addresses.
 
 ### Node.js API Server
 
@@ -37,7 +38,7 @@ npm ci
 Copy-Item .env.example .env
 ```
 
-Edit `backend/node-server/.env` with the MySQL connection details and desired API port. The example uses port `5001`, which is the port currently configured in the frontend. Start the server with:
+Edit `backend/node-server/.env` with the MySQL connection details, desired API port, `FRONTEND_URL`, and `FASTAPI_API_URL`. `FRONTEND_URL` controls the browser origin allowed by CORS. Start the server with:
 
 ```powershell
 npm run dev
@@ -58,7 +59,7 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-The FastAPI application does not require the MySQL configuration used by the Node.js API. Start it from `backend/fastapi-server`:
+Set `FRONTEND_URL` and `NODE_API_URL` in `backend/fastapi-server/.env` to the deployed frontend and Node.js API origins. The FastAPI application does not require the MySQL configuration used by the Node.js API. Start it from `backend/fastapi-server`:
 
 ```powershell
 python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
