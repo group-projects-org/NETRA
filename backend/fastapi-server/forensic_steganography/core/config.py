@@ -1,7 +1,12 @@
 """Central configuration for the forensic steganography pipeline.
 
-Every geometric and coding parameter shared by the encoder and the (future)
-decoder lives here, so both sides are guaranteed to agree on the format.
+Every geometric and coding parameter shared by the encoder, vision stage and
+decoder lives here, so all sides are guaranteed to agree on the format.
+
+The HMAC key is read from ``NETRA_STEG_SECRET``. If that is not already set in
+the environment, it is loaded from the nearest ``.env`` file: first searching
+upward from the current directory, then upward from this package (which finds
+``backend/.env``). Variables that are already set are never overwritten.
 """
 
 from __future__ import annotations
@@ -9,6 +14,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from math import gcd
+from pathlib import Path
 
 from .errors import ConfigError
 
@@ -39,6 +45,11 @@ class StegConfig:
     # Drawings larger than this fraction of the page (page backgrounds,
     # full-page frames) are not treated as obstacles.
     ignore_drawing_area_frac: float = 0.5
+    # Scanned pages: a raster covering more than ignore_drawing_area_frac of
+    # the page is not an obstacle as a whole; its ink is located from pixels.
+    raster_dpi: int = 100                # resolution of the ink analysis
+    raster_ink_frac: float = 0.7         # darker than 70% of paper white = ink
+    raster_join_pt: float = 3.0          # glyphs closer than this merge into one box
 
     # Pilot constellation in normalised tile space (x right, y down).
     pilots: tuple[tuple[float, float], ...] = (
@@ -99,13 +110,37 @@ class StegConfig:
 DEFAULT_CONFIG = StegConfig()
 
 
+def find_env_file() -> Path | None:
+    """Nearest ``.env`` above the current directory, else above this package."""
+    for start in (Path.cwd(), Path(__file__).resolve().parent):
+        for folder in (start, *start.parents):
+            candidate = folder / ".env"
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def load_env() -> Path | None:
+    """Load the nearest ``.env`` without overriding variables already set."""
+    path = find_env_file()
+    if path is not None:
+        from dotenv import load_dotenv
+
+        load_dotenv(path, override=False)
+    return path
+
+
 def resolve_secret(secret: str | bytes | None = None) -> bytes:
-    """Return the HMAC key, preferring an explicit override over the env var."""
+    """Return the HMAC key: explicit override, else env var, else ``.env``."""
     if secret is None:
         secret = os.environ.get(SECRET_ENV_VAR)
         if not secret:
+            load_env()
+            secret = os.environ.get(SECRET_ENV_VAR)
+        if not secret:
             raise ConfigError(
-                f"No secret supplied and {SECRET_ENV_VAR} is not set"
+                f"No secret supplied and {SECRET_ENV_VAR} is not set "
+                f"(add it to backend/.env; see backend/.env.example)"
             )
     key = secret.encode("utf-8") if isinstance(secret, str) else bytes(secret)
     if len(key) < MIN_SECRET_BYTES:

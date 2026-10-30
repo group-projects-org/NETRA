@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netra-fastapi-server"
+version = "0.1.0"
+description = "NETRA backend Python services (forensic steganography, ...)"
+requires-python = ">=3.11"
+# Dependencies are pinned in backend/requirements.txt (one shared venv).
+
+[project.scripts]
+netra-encode = "forensic_steganography.encoder.__main__:main"
+netra-vision = "forensic_steganography.vision.__main__:main"
+netra-decode = "forensic_steganography.decoder.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["forensic_steganography*"]
