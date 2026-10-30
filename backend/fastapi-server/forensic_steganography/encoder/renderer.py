@@ -5,7 +5,8 @@ Each dot is emitted as a zero-length stroke with a round line cap
 diameter equal to the line width, at ~25 bytes per dot instead of ~150 for
 a four-Bezier circle, which keeps tens of thousands of dots per page cheap.
 The shape is committed with ``overlay=False`` so the dots sit underneath the
-existing page content.
+existing page content - except on scanned pages, where an opaque page-sized
+image would hide them; there they are drawn on top (they still avoid all ink).
 """
 
 from __future__ import annotations
@@ -43,6 +44,7 @@ def render_dots(
     pilots: np.ndarray,
     config: StegConfig = DEFAULT_CONFIG,
     debug: bool = False,
+    overlay: bool = False,
 ) -> None:
     if debug:
         color: tuple[float, ...] = config.debug_color_rgb
@@ -55,4 +57,4 @@ def render_dots(
     shape = page.new_shape()
     _stroke_points(shape, dots, config.dot_r * scale, color)
     _stroke_points(shape, pilots, config.pilot_r * scale, color)
-    shape.commit(overlay=False)
+    shape.commit(overlay=overlay)

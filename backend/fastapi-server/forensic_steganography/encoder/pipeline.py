@@ -17,7 +17,7 @@ from ..core.config import DEFAULT_CONFIG, StegConfig, resolve_secret
 from ..core.errors import StegError
 from ..core.layout import TileLayout
 from .fec import rs_encode
-from .occupancy import extract_obstacles, page_extent
+from .occupancy import extract_obstacles, page_extent, raster_backgrounds
 from .payload import build_packet
 from .placement import plan_page
 from .renderer import render_dots
@@ -33,6 +33,7 @@ class PageReport:
     cells_suppressed: int
     intact_tiles: int
     self_decodable_tiles: int
+    scanned: bool = False  # page is a raster scan; dots drawn on top of it
     # Rendered dot centres, kept for diagnostics/tests; excluded from to_dict().
     dots: np.ndarray = field(default_factory=lambda: np.empty((0, 2)), repr=False)
 
@@ -120,7 +121,8 @@ def encode_pdf(
             width, height = page_extent(page)
             obstacles = extract_obstacles(page, config)
             plan = plan_page(width, height, tile.matrix, obstacles, layout)
-            render_dots(page, plan.dots, plan.pilots, config, debug=debug)
+            scanned = bool(raster_backgrounds(page, config))
+            render_dots(page, plan.dots, plan.pilots, config, debug=debug, overlay=scanned)
             report.pages.append(PageReport(
                 page=index,
                 tiles=plan.n_tiles,
@@ -129,6 +131,7 @@ def encode_pdf(
                 cells_suppressed=plan.cells_suppressed,
                 intact_tiles=plan.intact_tiles,
                 self_decodable_tiles=int(plan.self_decodable.sum()),
+                scanned=scanned,
                 dots=plan.dots,
             ))
         out = doc.tobytes(garbage=3, deflate=True)

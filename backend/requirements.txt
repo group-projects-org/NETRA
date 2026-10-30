@@ -1,0 +1,14 @@
+# Single Python environment for every NETRA backend service.
+# Run from the backend/ folder:
+#   python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+
+# Forensic steganography (encoder / vision / decoder)
+-r fastapi-server/forensic_steganography/requirements.txt
+
+# Shared
+python-dotenv>=1.0.0        # loads backend/.env (NETRA_STEG_SECRET, ...)
+pytest>=8.0.0
+
+# The backend's Python packages, installed in editable mode so that
+# `python -m forensic_steganography.encoder` and `netra-encode` work from any folder.
+-e ./fastapi-server
