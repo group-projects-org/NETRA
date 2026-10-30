@@ -1,59 +1,97 @@
+
 import { useState } from "react";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
   const navigate = useNavigate();
+
   const [role, setRole] = useState("Examiner");
   const [officialId, setOfficialId] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [captchaChecked, setCaptchaChecked] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-  setLoginError("");
+  const handleLogin = async () => {
+    setLoginError("");
 
-  if (role === "Admin") {
-    navigate("/admin/dashboard");
-    return;
-  }
-
-  if (role === "Examiner") {
-    const saved = localStorage.getItem("netra_examiners");
-    const examiners = saved ? JSON.parse(saved) : [];
-
-    const examiner = examiners.find(
-      (item) => item.id === officialId.trim()
-    );
-
-    if (!examiner) {
-      setLoginError("Examiner ID not found.");
+    if (!captchaChecked) {
+      setLoginError("Please complete verification.");
       return;
     }
 
-    if (examiner.status !== "Approved") {
+    if (role !== "Examiner") {
       setLoginError(
-        `Your account is currently ${examiner.status}. Admin approval is required.`
+        `${role} login is currently unavailable.`
       );
       return;
     }
 
-    navigate("/examiner/dashboard");
-    return;
-  }
+    if (!officialId.trim() || !password) {
+      setLoginError("Please enter your Examiner ID and password.");
+      return;
+    }
 
-  navigate("/examiner/dashboard");
-};
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "http://localhost:5001/api/auth/examiner/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            examinerId: officialId.trim(),
+            password: password,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Login failed. Please try again."
+        );
+      }
+
+      if (!result.success || !result.data) {
+        throw new Error("Invalid server response.");
+      }
+
+      sessionStorage.setItem(
+        "netra_examiner",
+        JSON.stringify(result.data)
+      );
+
+      navigate("/examiner/dashboard");
+
+    } catch (error) {
+      setLoginError(
+        error.message || "Unable to connect to the server."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMouseMove = (e) => {
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
+
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
     const rotateY = (x / rect.width - 0.5) * 4;
     const rotateX = (y / rect.height - 0.5) * -4;
+
     card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
   };
+
   const handleMouseLeave = (e) => {
     e.currentTarget.style.transform =
       "perspective(1000px) rotateX(0deg) rotateY(0deg)";
@@ -123,7 +161,10 @@ function Login() {
 
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  setRole(e.target.value);
+                  setLoginError("");
+                }}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#1E4E70] focus:ring-1 focus:ring-[#1E4E70]/20"
               >
                 <option>Examiner</option>
@@ -144,7 +185,10 @@ function Login() {
                 id="officialId"
                 type="text"
                 value={officialId}
-                onChange={(e) => setOfficialId(e.target.value)}
+                onChange={(e) => {
+                  setOfficialId(e.target.value);
+                  setLoginError("");
+                }}
                 placeholder="Enter your official ID"
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 transition focus:border-[#1E4E70] focus:ring-1 focus:ring-[#1E4E70]/20"
               />
@@ -161,24 +205,38 @@ function Login() {
 
                 <button
                   type="button"
+                  onClick={() =>
+                    setLoginError("Forgot password functionality is not available yet.")
+                  }
                   className="text-xs text-[#1E4E70] hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
+
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setLoginError("");
+                  }}
                   placeholder="Enter your password"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 pr-10 text-sm text-slate-800 outline-none placeholder:text-slate-400 transition focus:border-[#1E4E70] focus:ring-1 focus:ring-[#1E4E70]/20"           />
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 pr-10 text-sm text-slate-800 outline-none placeholder:text-slate-400 transition focus:border-[#1E4E70] focus:ring-1 focus:ring-[#1E4E70]/20"
+                />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
-                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  {showPassword ? (
+                    <EyeOff size={17} />
+                  ) : (
+                    <Eye size={17} />
+                  )}
                 </button>
               </div>
             </div>
@@ -194,28 +252,31 @@ function Login() {
                 I'm not a robot
               </label>
 
-              <span className="text-[10px] text-slate-400">Verification</span>
+              <span className="text-[10px] text-slate-400">
+                Verification
+              </span>
             </div>
 
             {loginError && (
               <p className="text-xs font-medium text-red-600">
                 {loginError}
-                </p>
-              )}
+              </p>
+            )}
 
             <button
-             onClick={handleLogin}
-             type="button"
-              
-              disabled={!captchaChecked}
+              onClick={handleLogin}
+              type="button"
+              disabled={!captchaChecked || loading}
               className="w-full rounded-md bg-[#1E4E70] py-2.5 text-sm font-medium text-white transition hover:bg-[#173E59] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Sign In
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </div>
 
           <div className="mt-5 border-t border-slate-200 pt-4 text-center">
-            <p className="text-[10px] text-slate-500">Authorized users only</p>
+            <p className="text-[10px] text-slate-500">
+              Authorized users only
+            </p>
 
             <p className="mt-1 text-[9px] text-slate-400">
               N.E.T.R.A. Secure Examination Infrastructure
@@ -226,4 +287,5 @@ function Login() {
     </main>
   );
 }
+
 export default Login;

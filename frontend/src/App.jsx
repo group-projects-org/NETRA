@@ -4,13 +4,8 @@ import Login from "./components/Login";
 import ExaminerDashboard from "./components/examiner/ExaminerDashboard";
 import UploadQuestionPaper from "./components/examiner/UploadQuestionPaper";
 import AdminDashboard from "./components/admin/AdminDashboard";
-
-import {
-  About,
-  HowItWorks,
-  FeaturesPage,
-  Contact
-} from "./components/InfoPages";
+import AddExaminer from "./components/admin/AddExaminer";
+import {About, HowItWorks,FeaturesPage,Contact} from "./components/InfoPages";
 
 function App() {
   return (
@@ -36,6 +31,7 @@ function App() {
           path="/examiner/upload"
           element={<UploadQuestionPaper />}
         />
+        <Route path="/admin/add-examiner" element={<AddExaminer />} />
       </Routes>
     </BrowserRouter>
   );
