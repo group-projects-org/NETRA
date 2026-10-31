@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ShieldCheck,
@@ -61,7 +61,7 @@ const features = [
   },
 ];
 
-const workflow = [
+/*const workflow = [
   {
     number: "01",
     title: "Prepare the examination paper",
@@ -86,7 +86,7 @@ const workflow = [
     text: "Available activity records and forensic markings may support a review if a paper is suspected to have leaked.",
     note: "INVESTIGATION",
   },
-];
+];*/
 
 function Navbar() {
   const navigate = useNavigate();
@@ -340,7 +340,7 @@ export function HowItWorks() {
           </div>
 
           <div className="mt-12">
-            {stages.map((stage, index) => (
+            {stages.map((stage) => (
               <article
                 key={stage.number}
                 className="grid gap-4 border-b border-white/10 py-8 sm:grid-cols-[80px_1fr_220px] sm:gap-8 sm:py-10"
