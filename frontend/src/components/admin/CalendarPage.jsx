@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import ThemeToggle from "../ThemeToggle";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 export default function CalendarPage({
   calendarEvents,setCalendarEvents,selectedDate,setSelectedDate,eventTitle,setEventTitle,setSchedules,}) {

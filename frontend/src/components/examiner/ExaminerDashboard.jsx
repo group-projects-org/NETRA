@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import {Activity, AlertCircle, ArrowLeft, Bell, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Circle, Clock3, FileCheck2, FileText, FileUp, Filter, HelpCircle, Info,KeyRound,
-LayoutDashboard, LifeBuoy, LockKeyhole, LogOut,BookOpen, Menu, MoreVertical, Search, Settings, Shield, ShieldCheck, Upload, User,UserCircle, X,ClipboardList,CalendarClock,History,} from "lucide-react";
-import Notifications from "./Notifications";
+import { useMemo, useState } from "react";
+import { Activity, AlertCircle, ArrowLeft, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Circle, Clock3, FileCheck2, FileText, Filter, HelpCircle, LayoutDashboard, LifeBuoy, LogOut, BookOpen, Menu, Search, Shield, User, UserCircle, ClipboardList, CalendarClock, History } from "lucide-react";
 import UpcomingSchedule from "./UpcomingSchedule";
 import UploadQuestionPaper from "./UploadQuestionPaper";
 import ExaminationCalendar from "./ExaminationCalendar";
@@ -232,7 +230,7 @@ function StatCard({ icon: Icon, count, title, subtitle, tone, onClick }) {
 
 export default function ExaminerDashboard() {
   const [view, setView] = useState("dashboard");
-  const [papers, setPapers] = useState(initialPapers);
+  const [papers] = useState(initialPapers);
   const [notifications, setNotifications] = useState(() => {
   const saved = localStorage.getItem("netra_notifications");
   return saved ? JSON.parse(saved) : initialNotifications;
@@ -278,58 +276,6 @@ export default function ExaminerDashboard() {
     setSelectedPaper(paper);
     setView("paper-detail");
     setMobileSidebar(false);
-  };
-
-  const submitMockUpload = (formData) => {
-    if (!selectedFile) {
-      setUploadMessage("Please select a PDF file first.");
-      return;
-    }
-const selectedSchedule = {
-  "schedule-1": {
-    date: "14 Nov 2026",
-    shift: "Shift 1",
-    time: "10:00 AM",
-    duration: "3 Hours",
-  },
-  "schedule-2": {
-    date: "14 Nov 2026",
-    shift: "Shift 2",
-    time: "02:00 PM",
-    duration: "3 Hours",
-  },
-}[formData.schedule];
-
-const newPaper = {
-  id: `NETRA-QP-${String(44 + papers.length).padStart(4, "0")}`,
-
-  examination: formData.examination,
-  subject: formData.subject,
-  set: formData.set,
-  date: selectedSchedule.date,
-  shift: selectedSchedule.shift,
-  time: selectedSchedule.time,
-  duration: selectedSchedule.duration,
-  language: formData.language,
-  stage: "Submitted",
-  updated: "05 Oct 2026",
-  updatedTime: "Now",
-  file: selectedFile.name,
-  size: `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB`,
-  uploaded: "05 Oct 2026, Now",
-
-  integrity: "Verified",
-};
-
-    setPapers((current) => [newPaper, ...current]);
-    setSelectedFile(null);
-    setUploadMessage(
-      "Question paper submitted successfully. Mock processing has started."
-    );
-
-    setTimeout(() => {
-      setUploadMessage("");
-    }, 4000);
   };
 
   const handleLogout = () => {
@@ -1321,10 +1267,10 @@ const newPaper = {
   return (
     <div className="min-h-screen bg-[#f4f7fa] text-slate-900">
       <div className="flex h-screen overflow-hidden">
-        <Sidebar />
+        {Sidebar()}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Header />
+          {Header()}
 
          <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
             <div className="mx-auto w-full max-w-[1450px]">

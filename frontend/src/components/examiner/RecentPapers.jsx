@@ -1,5 +1,4 @@
 import { FileText, MoreVertical } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
 export default function RecentPapers({
   Card,
   SectionHeader,

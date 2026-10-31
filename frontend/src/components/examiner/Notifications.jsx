@@ -1,5 +1,4 @@
 import { Bell } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
 export default function Notifications({
   Card,
   SectionHeader,
