@@ -124,6 +124,8 @@ const [calendarEvents, setCalendarEvents] = useState([
   { id: 5, day: 28, month: 9, year: 2026, title: "UGC NET", time: "09:30 AM", recipients: "All Examiners, Superintendents" },
 ]);
 const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 9, 1));
+const [selectedDate, setSelectedDate] = useState({ day: null, month: 9, year: 2026 });
+const [eventTitle, setEventTitle] = useState("");
 const [showEventModal, setShowEventModal] = useState(false);
 const [newEvent, setNewEvent] = useState({
   title: "", date: "2026-10-17", time: "10:00", recipients: "All Examiners, Superintendents", message: "",
@@ -696,10 +698,10 @@ case "profile":
   return (
     <div className="min-h-screen bg-[#f4f7fa] text-slate-900">
       <div className="flex min-h-screen">
-        <Sidebar />
+        {Sidebar()}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Header />
+          {Header()}
 
           <main className="flex-1 overflow-x-hidden px-4 py-4 sm:px-6 lg:px-5 lg:py-5">
             <div className="mx-auto w-full max-w-[1450px]">

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Bell, Send } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
 export default function NotificationsPage() {
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");

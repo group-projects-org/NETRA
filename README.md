@@ -85,18 +85,29 @@ python -m forensic_steganography.encoder input.pdf output.pdf --payload CID1007_
 
 ## Verification
 
-Run the Python test suite from `backend/fastapi-server`:
+Run the Python test suite from `backend/fastapi-server`. This runs both the FastAPI endpoint tests and the forensic-steganography tests, and reports Python source coverage:
 
 ```powershell
 python -m pytest
 ```
 
-Run the frontend lint and production build from `frontend`:
+Run the Node.js API tests and coverage from `backend/node-server`:
 
 ```powershell
+npm test
+npm run test:coverage
+```
+
+Run frontend tests, lint, and a production build from `frontend`:
+
+```powershell
+npm test
+npm run test:coverage
 npm run lint
 npm run build
 ```
+
+Each package measures its own source with its language's coverage tool. The Python, Node.js, and frontend reports are separate (`coverage.xml` for Python and `coverage/lcov.info` for JavaScript); CI can upload all three to a coverage service for a combined repository view. Coverage includes executed source paths, not dependencies or generated output, and does not imply every source line is tested.
 
 ## Environment and Generated Files
 

@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   Check,
@@ -12,7 +11,6 @@ import {
   Clock3,
   FileImage,
   FileText,
-  Flag,
   LayoutDashboard,
   LockKeyhole,
   Plus,
@@ -23,7 +21,6 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
 const ASSIGNMENT = {
   id: "EX-102",
   examination: "National Eligibility Test",

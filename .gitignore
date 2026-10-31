@@ -54,6 +54,9 @@ desktop.ini
 
 # Coverage
 coverage/
+coverage.xml
+.coverage
+**/.coverage
 .nyc_output/
 
 # ML / data generated locally

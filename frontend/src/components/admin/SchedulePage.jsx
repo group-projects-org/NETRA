@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Clock3, Plus, Send, Trash2 } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
 export default function SchedulePage({
   schedules,
   setSchedules,
