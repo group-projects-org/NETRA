@@ -15,7 +15,10 @@ NETRA/
 |   |   |-- pyproject.toml                  # Python package and CLI metadata
 |   |   |-- pytest.ini                      # Python test configuration
 |   |   |-- requirements.txt                # Python runtime and test dependencies
-|   |   |-- routes/                         # Reserved for FastAPI route modules
+|   |   |-- common/
+|   |   |   `-- database.py                 # SQLAlchemy/MySQL connection
+|   |   |-- routes/
+|   |   |   `-- health.py
 |   |   |-- forensic_steganography/
 |   |   |   |-- __init__.py
 |   |   |   |-- core/
@@ -37,6 +40,8 @@ NETRA/
 |   |   |       `-- tile.py
 |   |   `-- tests/
 |   |       |-- __init__.py
+|   |       |-- fastapi/
+|   |       |   `-- test_endpoints.py
 |   |       `-- forensic_steganography/
 |   |           |-- __init__.py
 |   |           |-- conftest.py
@@ -49,10 +54,14 @@ NETRA/
 |   `-- node-server/
 |       |-- .env.example
 |       |-- db.js                          # MySQL connection pool
+|       |-- app.js                         # Express application and middleware
 |       |-- index.js                       # Express application entry point
 |       |-- package.json
 |       |-- package-lock.json
 |       |-- test-api.http
+|       |-- tests/
+|       |   `-- api/
+|       |       `-- app.test.js
 |       `-- routes/
 |           |-- authRoutes.js
 |           `-- ExaminerRoutes.js
@@ -63,6 +72,10 @@ NETRA/
     |-- package-lock.json
     |-- vite.config.js
     |-- public/
+    |-- tests/
+    |   |-- setup.js
+    |   `-- components/
+    |       `-- Home.test.jsx
     `-- src/
         |-- App.css
         |-- App.jsx
@@ -70,7 +83,8 @@ NETRA/
         |-- main.jsx
         |-- assets/
         |-- context/
-        |   `-- ThemeContext.jsx
+        |   |-- ThemeContext.jsx
+        |   `-- ThemeContextValue.js
         `-- components/
             |-- Home.jsx
             |-- InfoPages.jsx
@@ -89,17 +103,20 @@ NETRA/
                 |-- ExaminerProfile.jsx
                 |-- Notifications.jsx
                 |-- RecentPapers.jsx
-                `-- UpcomingSchedule.jsx
+                |-- UpcomingSchedule.jsx
+                `-- UploadQuestionPaper.jsx
 ```
 
 ## Component Boundaries
 
 | Component | Responsibility | Primary entry point |
 | --- | --- | --- |
-| Frontend | React user interface, served and built with Vite | `frontend/src/main.jsx` |
-| Node.js API | Express routes and MySQL-backed examiner operations | `backend/node-server/index.js` |
-| FastAPI application | HTTP API, health checks, and API documentation | `backend/fastapi-server/main.py` |
+| Frontend | React user interface, built with Vite; npm scripts include ESLint and Vitest | `frontend/src/main.jsx` |
+| Node.js API | Express 5 API, MySQL-backed examiner operations; tests use Node's built-in test runner | `backend/node-server/index.js` |
+| FastAPI application | HTTP API, health checks, and API documentation; tests use pytest | `backend/fastapi-server/main.py` |
 | Forensic steganography | PDF watermark encoding, shared configuration, and CLI | `backend/fastapi-server/forensic_steganography/` |
+
+Both backend services connect to MySQL. The Node and React projects use npm, as indicated by their `package-lock.json` files.
 
 ## Local and Generated Artifacts
 
