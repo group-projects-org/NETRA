@@ -1,0 +1,139 @@
+name: NETRA CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.14"
+  NODE_VERSION: "24"
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend/fastapi-server
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/fastapi-server/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run backend tests
+        run: python -m pytest tests/ -v
+
+  node-server-tests:
+    name: Node Server Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend/node-server
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/node-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Node.js tests
+        run: node --test
+
+  frontend-tests:
+    name: Frontend Tests and Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npx vitest run
+
+      - name: Build frontend
+        run: npx vite build
+
+  ci-required:
+    name: CI Required
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    needs:
+      - backend-tests
+      - node-server-tests
+      - frontend-tests
+
+    if: always()
+
+    steps:
+      - name: Verify all CI jobs
+        env:
+          BACKEND: ${{ needs.backend-tests.result }}
+          NODE_SERVER: ${{ needs.node-server-tests.result }}
+          FRONTEND: ${{ needs.frontend-tests.result }}
+        run: |
+          echo "Backend Tests: $BACKEND"
+          echo "Node Server Tests: $NODE_SERVER"
+          echo "Frontend Tests: $FRONTEND"
+
+          if [[ "$BACKEND" != "success" ||
+                "$NODE_SERVER" != "success" ||
+                "$FRONTEND" != "success" ]]; then
+            echo "::error::NETRA CI failed. One or more jobs did not succeed."
+            exit 1
+          fi
+
+          echo "All NETRA CI checks passed successfully."
