@@ -1,14 +1,18 @@
 const express = require("express");
 const cors = require("cors");
-
+const notificationRoutes = require("./routes/NotificationRoutes");
 const examinerRoutes = require("./routes/ExaminerRoutes");
 const authRoutes = require("./routes/authRoutes");
 const db = require("./db");
 
 const app = express();
-const allowedOrigins = [process.env.FRONTEND_URL || "http://localhost:5173"];
-
-app.use(cors({ origin: allowedOrigins }));
+const allowedOrigins = [
+    process.env.FRONTEND_URL || "http://localhost:5173"
+];
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -28,5 +32,5 @@ app.get("/api/health/db", async (req, res) => {
 
 app.use("/api/admin/examiners", examinerRoutes);
 app.use("/api/auth", authRoutes);
-
+app.use("/api/notifications", notificationRoutes);
 module.exports = app;

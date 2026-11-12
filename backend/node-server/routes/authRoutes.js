@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const db = require("../db");
-
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 // Examiner Login API
@@ -55,18 +55,27 @@ router.post("/examiner/login", async (req, res) => {
         message: "Invalid Examiner ID or password.",
       });
     }
+   // Generate JWT token after successful authentication
+   const token = jwt.sign( {
+    id: examiner.id,
+    examinerId: examiner.examiner_id,
+    role: "EXAMINER",
+    }, process.env.JWT_SECRET,
+   {
+    expiresIn: process.env.JWT_EXPIRES_IN || "1d",
+  }); 
 
-    // Successful login response
     return res.status(200).json({
-      success: true,
-      message: "Login successful.",
-      data: {
-        id: examiner.id,
-        examinerId: examiner.examiner_id,
-        fullName: examiner.full_name,
-        email: examiner.email,
-        mustChangePassword: Boolean(examiner.must_change_password),
-      },
+    success: true,
+    message: "Login successful.",
+    token,
+    data: {
+    id: examiner.id,
+    examinerId: examiner.examiner_id,
+    fullName: examiner.full_name,
+    email: examiner.email,
+    mustChangePassword: Boolean(examiner.must_change_password),
+    },
     });
 
   } catch (error) {
