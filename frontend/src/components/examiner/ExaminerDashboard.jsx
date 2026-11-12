@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertCircle, ArrowLeft, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Circle, Clock3, FileCheck2, FileText, Filter, HelpCircle, LayoutDashboard, LifeBuoy, LogOut, BookOpen, Menu, Search, Shield, User, UserCircle, ClipboardList, CalendarClock, History } from "lucide-react";
 import UpcomingSchedule from "./UpcomingSchedule";
 import UploadQuestionPaper from "./UploadQuestionPaper";
 import ExaminationCalendar from "./ExaminationCalendar";
 import ThemeToggle from "../ThemeToggle";
 import ExaminerProfile from "./ExaminerProfile";
+import {io} from "socket.io-client";
 /*mock data*/
 const examiner = {
   name: "Dr. Arvind Kumar",
@@ -58,24 +59,6 @@ const initialPapers = [
 
 ];
 
-const initialNotifications = [
-  {
-    id: 1,
-    title: "Action required on submitted paper",
-    message: "NETRA-QP-0042 needs your attention.",
-    time: "11:20 AM",
-    type: "warning",
-    unread: true,
-  },
-  {
-    id: 2,
-    title: "System update",
-    message: "Security patch applied successfully.",
-    time: "10:05 AM",
-    type: "info",
-    unread: true,
-  },
-];
 
 const activityData = [
   {
@@ -228,13 +211,163 @@ function StatCard({ icon: Icon, count, title, subtitle, tone, onClick }) {
   );
 }
 
+// Read the existing examiner JWT from the application's browser storage.
+// Supports common auth key names without creating a second token store.
+const getExaminerToken = () => {
+  const storageKeys = [
+    "token", "accessToken", "access_token", "authToken", "auth_token",
+    "examinerToken", "examiner_token", "jwt", "user", "auth", "examiner",
+  ];
+
+  for (const storage of [localStorage, sessionStorage]) {
+    for (const key of storageKeys) {
+      const value = storage.getItem(key);
+      if (!value) continue;
+      if (value.split(".").length === 3) return value;
+      try {
+        const parsed = JSON.parse(value);
+        const token = parsed?.token || parsed?.accessToken || parsed?.access_token || parsed?.jwt;
+        if (typeof token === "string" && token.split(".").length === 3) return token;
+      } catch { /* value is not JSON */ }
+    }
+  }
+  return null;
+};
+
+const formatNotificationTime = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+};
+
 export default function ExaminerDashboard() {
   const [view, setView] = useState("dashboard");
   const [papers] = useState(initialPapers);
-  const [notifications, setNotifications] = useState(() => {
-  const saved = localStorage.getItem("netra_notifications");
-  return saved ? JSON.parse(saved) : initialNotifications;
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_NODE_API_URL;
+
+ 
+
+const getNotificationHeaders = () => {
+  const authToken = sessionStorage.getItem("netra_examiner_token");
+  if (!API_BASE_URL) {
+    throw new Error("VITE_NODE_API_URL is missing in frontend .env.");
+  }
+  if (!authToken) {
+    throw new Error("Examiner login token not found. Please log in again.");
+  }
+  return {
+    Authorization: `Bearer ${authToken}`,
+    "Content-Type": "application/json",
+  };
+};
+
+
+  const fetchUnreadCount = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
+      headers: getNotificationHeaders(),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Unable to fetch unread count.");
+    setUnreadNotifications(Number(data.unreadCount) || 0);
+  };
+
+  const fetchNotifications = async () => {
+    setNotificationsLoading(true);
+    setNotificationsError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/my-notifications`, {
+        headers: getNotificationHeaders(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to fetch notifications.");
+     const rows = Array.isArray(data.data) ? data.data : [];
+      setNotifications(rows.map((item) => ({
+        ...item,
+        id: item.notificationId ?? item.id,
+        unread: !Boolean(item.isRead),
+        time: formatNotificationTime(item.createdAt),
+        type: "info",
+      })));
+      await fetchUnreadCount();
+    } catch (error) {
+      setNotificationsError(error.message || "Unable to load notifications.");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Fetch on dashboard mount; refresh again whenever the bell is opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+useEffect(() => {
+  const token = sessionStorage.getItem("netra_examiner_token");
+
+  if (!token) {
+    console.error("Socket connection skipped: Examiner token not found.");
+    return;
+  }
+
+  const socket = io(API_BASE_URL, {
+    auth: {
+      token: token
+    },
+    transports: ["websocket"]
   });
+
+  socket.on("connect", () => {
+    console.log("NETRA Socket Connected:", socket.id);
+  });
+
+  socket.on("connect_error", (error) => {
+    console.error("Socket Connection Error:", error.message);
+  });
+
+  // Listen for new notifications
+  socket.on("notification:new", (notification) => {
+    console.log("New Notification Received:", notification);
+
+    setNotifications((current) => {
+      // Prevent duplicate notifications
+      if (current.some(
+        (item) => item.id === notification.notificationId
+      )) {
+        return current;
+      }
+
+      return [
+        {
+          ...notification,
+          id: notification.notificationId,
+          unread: true,
+          isRead: false,
+          time: formatNotificationTime(notification.createdAt),
+          type: "info"
+        },
+        ...current
+      ];
+    });
+
+    setUnreadNotifications((count) => count + 1);
+  });
+
+  return () => {
+    socket.disconnect();
+  };
+
+}, [API_BASE_URL]);
+
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [search, setSearch] = useState("");
   const [paperFilter, setPaperFilter] = useState("All");
@@ -287,14 +420,24 @@ export default function ExaminerDashboard() {
   }
 };
 
-  const unreadNotifications = notifications.filter((n) => n.unread).length;
-  const markNotificationsRead = () => {
-    setNotifications((current) =>
-      current.map((item) => ({
-        ...item,
-        unread: false,
-      }))
-    );
+  const markNotificationsRead = async () => {
+    if (unreadNotifications === 0 || markingAllRead) return;
+    setMarkingAllRead(true);
+    setNotificationsError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
+        method: "PATCH",
+        headers: getNotificationHeaders(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to mark notifications as read.");
+      setNotifications((current) => current.map((item) => ({ ...item, unread: false, isRead: true })));
+      setUnreadNotifications(0);
+    } catch (error) {
+      setNotificationsError(error.message || "Unable to mark notifications as read.");
+    } finally {
+      setMarkingAllRead(false);
+    }
   };
 
   const primaryNav = [
@@ -458,7 +601,12 @@ export default function ExaminerDashboard() {
               <ThemeToggle />
         {/* Notifications */}
         <div className="relative">
-          <button  onClick={() => { setNotificationOpen((v) => !v);setProfileOpen(false);}}
+          <button  onClick={() => {
+              const willOpen = !notificationOpen;
+              setNotificationOpen(willOpen);
+              setProfileOpen(false);
+              if (willOpen) fetchNotifications();
+            }}
             className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100">
             <Bell size={21} strokeWidth={1.8} />
 
@@ -476,13 +624,19 @@ export default function ExaminerDashboard() {
                   Notifications
                 </div>
 
-                <button onClick={markNotificationsRead} className="text-xs font-medium text-[#1264a3]">
-                  Mark all as read
+                <button onClick={markNotificationsRead} disabled={unreadNotifications === 0 || markingAllRead} className="text-xs font-medium text-[#1264a3] disabled:cursor-not-allowed disabled:opacity-40">
+                  {markingAllRead ? "Marking..." : "Mark all as read"}
                 </button>
               </div>
 
               <div className="max-h-[380px] overflow-y-auto">
-                {notifications.map((notification) => (
+                {notificationsLoading ? (
+                  <p className="px-4 py-8 text-center text-sm text-slate-500">Loading notifications...</p>
+                ) : notificationsError ? (
+                  <p className="px-4 py-6 text-center text-xs text-red-600">{notificationsError}</p>
+                ) : notifications.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-sm text-slate-500">No notifications yet.</p>
+                ) : notifications.map((notification) => (
                   <div key={notification.id} className={`border-b border-slate-100 px-4 py-3 last:border-0 ${
                       notification.unread ? "bg-[#f8fbfe]" : ""
                     }`}>

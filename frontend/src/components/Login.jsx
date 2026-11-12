@@ -67,7 +67,11 @@ function Login() {
         "netra_examiner",
         JSON.stringify(result.data)
       );
-
+      // Store JWT token for authenticated API requests
+      sessionStorage.setItem(
+      "netra_examiner_token",
+       result.token
+       );
       navigate("/examiner/dashboard");
 
     } catch (error) {

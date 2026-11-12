@@ -1,8 +1,7 @@
 import { useState } from "react";
 import CalendarPage from "./CalendarPage";
 import SchedulePage from "./SchedulePage";
-import NotificationsPage from "./NotificationsPage";
-import { Activity, Bell, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, LayoutDashboard, LogOut, Menu, Plus, Shield, UserCheck, Users, X, } from "lucide-react";
+import { Activity, Bell, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, LayoutDashboard, Loader2, LogOut, Menu, Plus, Search, Send, Shield, UserCheck, Users, X, } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 import AdminProfile from "./AdminProfile";
 const admin = {
@@ -10,6 +9,17 @@ const admin = {
   id: "ADM-00001",
   role: "Administrator",
 };
+
+// Frontend .env: VITE_NODE_API_URL=http://localhost:5001
+const API_BASE_URL = import.meta.env.VITE_NODE_API_URL?.replace(/\/$/, "");
+
+// Keep these values aligned with the department names stored in the examiners table.
+const DEPARTMENTS = [
+  "Computer Science",
+  "Information Technology",
+  "Science & Technology",
+  "Mathematics",
+];
 
 const initialExaminers = [
   {
@@ -131,6 +141,18 @@ const [newEvent, setNewEvent] = useState({
   title: "", date: "2026-10-17", time: "10:00", recipients: "All Examiners, Superintendents", message: "",
 });
 const [eventMessage, setEventMessage] = useState("");
+
+  // Notification composer state
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [departmentExaminers, setDepartmentExaminers] = useState([]);
+  const [selectedExaminerIds, setSelectedExaminerIds] = useState([]);
+  const [loadingExaminers, setLoadingExaminers] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
+  const [notificationSuccess, setNotificationSuccess] = useState("");
   const pendingExaminers = examiners.filter(
     (examiner) => examiner.status === "Pending"
   ).length;
@@ -167,6 +189,128 @@ const [eventMessage, setEventMessage] = useState("");
     window.location.href = "/";
   }
 };
+
+  const openNotificationModal = () => {
+    setNotificationTitle("");
+    setNotificationMessage("");
+    setSelectedDepartment("");
+    setDepartmentExaminers([]);
+    setSelectedExaminerIds([]);
+    setNotificationError("");
+    setNotificationSuccess("");
+    setShowNotificationModal(true);
+  };
+
+  const handleDepartmentChange = async (event) => {
+    const department = event.target.value;
+    setSelectedDepartment(department);
+    setDepartmentExaminers([]);
+    setSelectedExaminerIds([]);
+    setNotificationError("");
+    setNotificationSuccess("");
+
+    if (!department) return;
+    if (!API_BASE_URL) {
+      setNotificationError("VITE_NODE_API_URL is not configured in the frontend .env file.");
+      return;
+    }
+
+    setLoadingExaminers(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/notifications/examiners?department=${encodeURIComponent(department)}`
+      );
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Unable to fetch examiners for this department.");
+      }
+
+      const examinerList = Array.isArray(data)
+        ? data
+        : data.examiners ?? data.data ?? [];
+      setDepartmentExaminers(examinerList);
+    } catch (error) {
+      setNotificationError(error.message || "Something went wrong while fetching examiners.");
+    } finally {
+      setLoadingExaminers(false);
+    }
+  };
+
+  const toggleExaminerSelection = (examinerId) => {
+    setSelectedExaminerIds((current) =>
+      current.includes(examinerId)
+        ? current.filter((id) => id !== examinerId)
+        : [...current, examinerId]
+    );
+  };
+
+  const toggleSelectAllExaminers = () => {
+    const allIds = departmentExaminers.map((examiner) => Number(examiner.id));
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedExaminerIds.includes(id));
+    setSelectedExaminerIds((current) =>
+      allSelected
+        ? current.filter((id) => !allIds.includes(id))
+        : [...new Set([...current, ...allIds])]
+    );
+  };
+
+  const handleSendNotification = async (event) => {
+    event.preventDefault();
+    setNotificationError("");
+    setNotificationSuccess("");
+
+    if (!notificationTitle.trim() || !notificationMessage.trim()) {
+      setNotificationError("Please enter both notification title and message.");
+      return;
+    }
+    if (selectedExaminerIds.length === 0) {
+      setNotificationError("Please select at least one examiner.");
+      return;
+    }
+    if (!API_BASE_URL) {
+      setNotificationError("VITE_NODE_API_URL is not configured in the frontend .env file.");
+      return;
+    }
+
+    setSendingNotification(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: notificationTitle.trim(),
+          message: notificationMessage.trim(),
+          examinerIds: selectedExaminerIds,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Unable to send notification.");
+      }
+
+      setNotifications((current) => [
+        {
+          id: data.notificationId ?? Date.now(),
+          title: notificationTitle.trim(),
+          message: notificationMessage.trim(),
+          time: "Just now",
+        },
+        ...current,
+      ]);
+      setNotificationSuccess(data.message || "Notification sent successfully.");
+      setNotificationTitle("");
+      setNotificationMessage("");
+      setSelectedExaminerIds([]);
+      setSelectedDepartment("");
+      setDepartmentExaminers([]);
+      window.setTimeout(() => setShowNotificationModal(false), 900);
+    } catch (error) {
+      setNotificationError(error.message || "Something went wrong while sending the notification.");
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
   const Sidebar = () => (
     <>
       {mobileSidebar && (
@@ -204,7 +348,6 @@ const [eventMessage, setEventMessage] = useState("");
             {id: "calendar",label: "Calendar",icon: CalendarDays,},
             {id: "schedules",label: "Exam Schedule",icon: Clock3,},
             {id: "examiners",label: "Examiner Approval",icon: UserCheck,},
-            {id: "notifications",label: "Notifications",icon: Bell,},
             {id: "activity",label: "Activity Log",icon: Activity,},
           ].map((item) => { 
             const Icon = item.icon;
@@ -324,9 +467,14 @@ const [eventMessage, setEventMessage] = useState("");
 
     return (
       <div className="space-y-5">
-        <div className="rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white to-[#edf6fc] px-6 py-5">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">Welcome back, {admin.name}</h1>
-          <p className="mt-1 text-sm text-slate-500">Manage examinations, schedules and examiner access securely through N.E.T.R.A.</p>
+        <div className="flex flex-col gap-4 rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white to-[#edf6fc] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">Welcome back, {admin.name}</h1>
+            <p className="mt-1 text-sm text-slate-500">Manage examinations, schedules and examiner access securely through N.E.T.R.A.</p>
+          </div>
+          <button onClick={openNotificationModal} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#176bb0] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125b95]">
+            <Bell size={17} /> Send Notification
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -373,7 +521,7 @@ const [eventMessage, setEventMessage] = useState("");
             <Card className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center gap-2.5"><Bell size={19} className="text-[#1d5b88]" /><h2 className="text-[15px] font-semibold text-slate-900">Recent Notifications</h2></div>
-                <button onClick={() => navigate("notifications")} className="text-xs font-semibold text-blue-700 hover:text-blue-900">View all <span aria-hidden="true">→</span></button>
+
               </div>
               <div className="divide-y divide-slate-100">
                 {notifications.slice(0, 5).map((notification) => (
@@ -440,6 +588,158 @@ const [eventMessage, setEventMessage] = useState("");
         </div>
 
         {eventMessage && <p role="status" className="text-xs text-emerald-700">{eventMessage}</p>}
+
+        {showNotificationModal && (
+          <div
+            className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 backdrop-blur-[2px] sm:p-5"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !sendingNotification) {
+                setShowNotificationModal(false);
+              }
+            }}
+          >
+            <form onSubmit={handleSendNotification} className="my-auto flex max-h-[92vh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Create Notification</h2>
+                  <p className="mt-1 text-xs text-slate-500">Compose a message and choose the examiners who should receive it.</p>
+                </div>
+                <button type="button" disabled={sendingNotification} onClick={() => setShowNotificationModal(false)} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50" aria-label="Close notification modal">
+                  <X size={19} />
+                </button>
+              </div>
+
+              <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-[0.9fr_1.1fr]">
+                {/* Left panel: notification content */}
+                <section className="space-y-4 border-b border-slate-100 p-5 sm:p-6 md:border-b-0 md:border-r">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Notification Details</h3>
+                    <p className="mt-1 text-xs text-slate-500">Write the title and message for your examiners.</p>
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Notification Title <span className="text-red-500">*</span></span>
+                    <input
+                      required
+                      maxLength={255}
+                      value={notificationTitle}
+                      onChange={(event) => setNotificationTitle(event.target.value)}
+                      placeholder="e.g. Important Examination Update"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Message <span className="text-red-500">*</span></span>
+                    <textarea
+                      required
+                      rows={8}
+                      value={notificationMessage}
+                      onChange={(event) => setNotificationMessage(event.target.value)}
+                      placeholder="Write your notification message here..."
+                      className="w-full resize-y rounded-lg border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition placeholder:text-slate-400 focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100"
+                    />
+                  </label>
+
+                  <div className="rounded-xl border border-[#dce8f2] bg-[#f6faff] p-4">
+                    <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[#1d5b88]"><Bell size={15} /> Preview</div>
+                    <p className="break-words text-sm font-semibold text-slate-800">{notificationTitle.trim() || "Notification title will appear here"}</p>
+                    <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-slate-600">{notificationMessage.trim() || "Your notification message preview will appear here."}</p>
+                  </div>
+                </section>
+
+                {/* Right panel: department filter and examiner selection */}
+                <section className="flex min-h-[360px] flex-col p-5 sm:p-6">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Select Recipients</h3>
+                    <p className="mt-1 text-xs text-slate-500">Choose a department to load its active examiners.</p>
+                  </div>
+
+                  <label className="mt-4 block">
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Department <span className="text-red-500">*</span></span>
+                    <select
+                      value={selectedDepartment}
+                      onChange={handleDepartmentChange}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="">Select department</option>
+                      {DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                    </select>
+                  </label>
+
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-800">Available Examiners</h4>
+                      <p className="mt-0.5 text-[11px] text-slate-500">{departmentExaminers.length} examiner{departmentExaminers.length === 1 ? "" : "s"} found</p>
+                    </div>
+                    {departmentExaminers.length > 0 && (
+                      <button type="button" onClick={toggleSelectAllExaminers} className="text-xs font-semibold text-[#176bb0] hover:text-[#125b95]">
+                        {departmentExaminers.every((examiner) => selectedExaminerIds.includes(Number(examiner.id))) ? "Deselect All" : "Select All"}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-3 min-h-[190px] flex-1 overflow-y-auto rounded-xl border border-slate-200">
+                    {loadingExaminers ? (
+                      <div className="flex h-full min-h-[190px] items-center justify-center gap-2 text-xs text-slate-500"><Loader2 size={17} className="animate-spin" /> Loading examiners...</div>
+                    ) : !selectedDepartment ? (
+                      <div className="flex h-full min-h-[190px] flex-col items-center justify-center px-4 text-center text-slate-400">
+                        <Search size={22} className="mb-2" />
+                        <p className="text-xs">Select a department to view examiners.</p>
+                      </div>
+                    ) : departmentExaminers.length === 0 ? (
+                      <div className="flex h-full min-h-[190px] items-center justify-center px-4 text-center text-xs text-slate-500">No active examiners found in this department.</div>
+                    ) : (
+                      <div className="divide-y divide-slate-100">
+                        {departmentExaminers.map((examiner) => {
+                          const examinerDbId = Number(examiner.id);
+                          const isSelected = selectedExaminerIds.includes(examinerDbId);
+                          return (
+                            <label key={examiner.id} className="flex cursor-pointer items-start gap-3 px-4 py-3.5 transition hover:bg-slate-50">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleExaminerSelection(examinerDbId)}
+                                className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#176bb0]"
+                              />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-xs font-semibold text-slate-800">{examiner.full_name || examiner.name || "Unnamed examiner"}</span>
+                                <span className="mt-1 block text-[11px] text-slate-500">{examiner.examiner_id || examiner.examinerId || ""}</span>
+                                <span className="mt-0.5 block break-all text-[11px] text-slate-500">{examiner.email || ""}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
+                    <span className="text-xs text-slate-600">Selected recipients</span>
+                    <span className="text-xs font-semibold text-slate-900">{selectedExaminerIds.length}</span>
+                  </div>
+                </section>
+              </div>
+
+              {(notificationError || notificationSuccess) && (
+                <div className={`mx-5 mb-3 rounded-lg px-3 py-2.5 text-xs sm:mx-6 ${notificationError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`} role="status">
+                  {notificationError || notificationSuccess}
+                </div>
+              )}
+
+              <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <p className="text-[11px] text-slate-500">{selectedExaminerIds.length} examiner{selectedExaminerIds.length === 1 ? "" : "s"} will receive this notification.</p>
+                <div className="flex justify-end gap-2">
+                  <button type="button" disabled={sendingNotification} onClick={() => setShowNotificationModal(false)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+                  <button type="submit" disabled={sendingNotification || loadingExaminers || !notificationTitle.trim() || !notificationMessage.trim() || selectedExaminerIds.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#176bb0] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#125b95] disabled:cursor-not-allowed disabled:opacity-50">
+                    {sendingNotification ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    {sendingNotification ? "Sending..." : "Send Notification"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
 
         {showEventModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowEventModal(false); }}>
@@ -650,7 +950,7 @@ const [eventMessage, setEventMessage] = useState("");
 
   const renderPage = () => {
       switch (view) {
-      case "dashboard": return <Dashboard />;
+      case "dashboard": return Dashboard();
 
       case "calendar":
       return (
@@ -675,15 +975,6 @@ const [eventMessage, setEventMessage] = useState("");
 
       case "examiners":return <ExaminerApproval />;
 
-      case "notifications":
-      return (
-    <NotificationsPage
-      notifications={notifications}
-      setNotifications={setNotifications}
-    />
-  );
-
-  
 case "activity":
   return <ActivityLog />;
 
