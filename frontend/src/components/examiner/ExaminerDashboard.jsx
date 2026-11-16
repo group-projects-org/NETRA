@@ -252,28 +252,59 @@ export default function ExaminerDashboard() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
   const [markingAllRead, setMarkingAllRead] = useState(false);
+
+  // Events state (GET /api/events/my-events & GET /api/events/:id)
+  const [examinerEvents, setExaminerEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState("");
+
   const API_BASE_URL = import.meta.env.VITE_NODE_API_URL;
 
- 
-
-const getNotificationHeaders = () => {
-  const authToken = sessionStorage.getItem("netra_examiner_token");
-  if (!API_BASE_URL) {
-    throw new Error("VITE_NODE_API_URL is missing in frontend .env.");
-  }
-  if (!authToken) {
-    throw new Error("Examiner login token not found. Please log in again.");
-  }
-  return {
-    Authorization: `Bearer ${authToken}`,
-    "Content-Type": "application/json",
+  const getAuthHeaders = () => {
+    const authToken = sessionStorage.getItem("netra_examiner_token") || getExaminerToken();
+    if (!API_BASE_URL) {
+      throw new Error("VITE_NODE_API_URL is missing in frontend .env.");
+    }
+    if (!authToken) {
+      throw new Error("Examiner login token not found. Please log in again.");
+    }
+    return {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+    };
   };
-};
 
+  // 1. Fetch all events assigned to the logged-in examiner
+  const fetchExaminerEvents = async () => {
+    setEventsLoading(true);
+    setEventsError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/events/my-events`, {
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to fetch events.");
+      setExaminerEvents(Array.isArray(data.data) ? data.data : []);
+    } catch (error) {
+      setEventsError(error.message || "Unable to load events.");
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  // 2. Fetch single event details by ID
+  const fetchEventById = async (eventId) => {
+    const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Unable to fetch event details.");
+    return data.data;
+  };
 
   const fetchUnreadCount = async () => {
     const response = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
-      headers: getNotificationHeaders(),
+      headers: getAuthHeaders(),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Unable to fetch unread count.");
@@ -285,11 +316,11 @@ const getNotificationHeaders = () => {
     setNotificationsError("");
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/my-notifications`, {
-        headers: getNotificationHeaders(),
+        headers: getAuthHeaders(),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to fetch notifications.");
-     const rows = Array.isArray(data.data) ? data.data : [];
+      const rows = Array.isArray(data.data) ? data.data : [];
       setNotifications(rows.map((item) => ({
         ...item,
         id: item.notificationId ?? item.id,
@@ -307,66 +338,66 @@ const getNotificationHeaders = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Fetch on dashboard mount; refresh again whenever the bell is opened.
+    fetchExaminerEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-useEffect(() => {
-  const token = sessionStorage.getItem("netra_examiner_token");
+  useEffect(() => {
+    const token = sessionStorage.getItem("netra_examiner_token") || getExaminerToken();
 
-  if (!token) {
-    console.error("Socket connection skipped: Examiner token not found.");
-    return;
-  }
+    if (!token) {
+      console.error("Socket connection skipped: Examiner token not found.");
+      return;
+    }
 
-  const socket = io(API_BASE_URL, {
-    auth: {
-      token: token
-    },
-    transports: ["websocket"]
-  });
-
-  socket.on("connect", () => {
-    console.log("NETRA Socket Connected:", socket.id);
-  });
-
-  socket.on("connect_error", (error) => {
-    console.error("Socket Connection Error:", error.message);
-  });
-
-  // Listen for new notifications
-  socket.on("notification:new", (notification) => {
-    console.log("New Notification Received:", notification);
-
-    setNotifications((current) => {
-      // Prevent duplicate notifications
-      if (current.some(
-        (item) => item.id === notification.notificationId
-      )) {
-        return current;
-      }
-
-      return [
-        {
-          ...notification,
-          id: notification.notificationId,
-          unread: true,
-          isRead: false,
-          time: formatNotificationTime(notification.createdAt),
-          type: "info"
-        },
-        ...current
-      ];
+    const socket = io(API_BASE_URL, {
+      auth: {
+        token: token
+      },
+      transports: ["websocket"]
     });
 
-    setUnreadNotifications((count) => count + 1);
-  });
+    socket.on("connect", () => {
+      console.log("NETRA Socket Connected:", socket.id);
+    });
 
-  return () => {
-    socket.disconnect();
-  };
+    socket.on("connect_error", (error) => {
+      console.error("Socket Connection Error:", error.message);
+    });
 
-}, [API_BASE_URL]);
+    // Listen for new notifications & refresh calendar events simultaneously
+    socket.on("notification:new", (notification) => {
+      console.log("New Notification Received:", notification);
+
+      setNotifications((current) => {
+        if (current.some(
+          (item) => item.id === notification.notificationId
+        )) {
+          return current;
+        }
+
+        return [
+          {
+            ...notification,
+            id: notification.notificationId,
+            unread: true,
+            isRead: false,
+            time: formatNotificationTime(notification.createdAt),
+            type: "info"
+          },
+          ...current
+        ];
+      });
+
+      setUnreadNotifications((count) => count + 1);
+      fetchExaminerEvents();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [API_BASE_URL]);
 
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [search, setSearch] = useState("");
@@ -390,11 +421,11 @@ useEffect(() => {
   const filteredPapers = useMemo(() => {
     const q = search.toLowerCase().trim();
     return papers.filter((paper) => {
-      const matchesFilter =paperFilter === "All" || paper.stage === paperFilter;
+      const matchesFilter = paperFilter === "All" || paper.stage === paperFilter;
       const matchesSearch = !q || paper.id.toLowerCase().includes(q) || paper.examination.toLowerCase().includes(q) || paper.subject.toLowerCase().includes(q);
       return matchesFilter && matchesSearch;
     });
-    }, [papers, search, paperFilter]);
+  }, [papers, search, paperFilter]);
 
 
   const navigate = (nextView) => {
@@ -412,13 +443,13 @@ useEffect(() => {
   };
 
   const handleLogout = () => {
-  const confirmed = window.confirm(
-    "Are you sure you want to sign out of N.E.T.R.A.?"
-  );
-  if (confirmed) {
-    window.location.href = "/";
-  }
-};
+    const confirmed = window.confirm(
+      "Are you sure you want to sign out of N.E.T.R.A.?"
+    );
+    if (confirmed) {
+      window.location.href = "/";
+    }
+  };
 
   const markNotificationsRead = async () => {
     if (unreadNotifications === 0 || markingAllRead) return;
@@ -427,7 +458,7 @@ useEffect(() => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
         method: "PATCH",
-        headers: getNotificationHeaders(),
+        headers: getAuthHeaders(),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to mark notifications as read.");
@@ -446,7 +477,7 @@ useEffect(() => {
       label: "Dashboard",
       icon: LayoutDashboard,
     },
-     {
+    {
       id: "create-questions",
       label: "Create Questions",
       icon: BookOpen,
@@ -460,7 +491,7 @@ useEffect(() => {
       id: "activity",
       label: "Activity Log",
       icon: Activity,
-    }, 
+    },
   ];
 
   const secondaryNav = [
@@ -528,7 +559,7 @@ useEffect(() => {
             return (
               <button key={item.id} onClick={() => navigate(item.id)}
                 className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
-                  isActive(item.id) ? "bg-[#164e7b] text-white shadow-sm": "text-slate-300 hover:bg-white/5 hover:text-white"
+                  isActive(item.id) ? "bg-[#164e7b] text-white shadow-sm" : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`} >
                 <Icon size={19} strokeWidth={1.8} />
                 <span>{item.label}</span>
@@ -542,7 +573,7 @@ useEffect(() => {
 
             return (
               <button key={item.id} onClick={() => navigate(item.id)} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
-                  isActive(item.id) ? "bg-[#164e7b] text-white": "text-slate-300 hover:bg-white/5 hover:text-white"
+                  isActive(item.id) ? "bg-[#164e7b] text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`} >
                 <Icon size={19} strokeWidth={1.8} />
                 <span>{item.label}</span>
@@ -576,6 +607,7 @@ useEffect(() => {
       </aside>
     </>
   );
+
   const Header = () => (
     <header className="relative flex h-[80px] shrink-0 items-center border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
       <button onClick={() => setMobileSidebar(true)}
@@ -598,10 +630,10 @@ useEffect(() => {
         />
       </div>
       <div className="ml-auto flex items-center gap-4">
-              <ThemeToggle />
+        <ThemeToggle />
         {/* Notifications */}
         <div className="relative">
-          <button  onClick={() => {
+          <button onClick={() => {
               const willOpen = !notificationOpen;
               setNotificationOpen(willOpen);
               setProfileOpen(false);
@@ -681,7 +713,7 @@ useEffect(() => {
             className="flex items-center gap-3 rounded-lg px-1.5 py-1.5 transition hover:bg-slate-50"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3e6484] text-sm font-semibold text-white">
-             {examiner.name.charAt(0)}
+              {examiner.name.charAt(0)}
             </div>
 
             <div className="hidden text-left sm:block">
@@ -719,171 +751,175 @@ useEffect(() => {
       </div>
     </header>
   );
- const Dashboard = () => (
-  <div className="space-y-5">
-    {/* Welcome banner */}
-    <div className="relative overflow-hidden rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white via-white to-[#edf6fc] px-6 py-5">
-      <div className="relative z-10">
-        <h1 className="text-[25px] font-semibold tracking-tight text-[#071a3d]">
-          Good Morning, {examiner.name}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Track your assigned examinations, deadlines, and submission progress.
-        </p>
+
+  const Dashboard = () => (
+    <div className="space-y-5">
+      {/* Welcome banner */}
+      <div className="relative overflow-hidden rounded-xl border border-[#dce8f2] bg-gradient-to-r from-white via-white to-[#edf6fc] px-6 py-5">
+        <div className="relative z-10">
+          <h1 className="text-[25px] font-semibold tracking-tight text-[#071a3d]">
+            Good Morning, {examiner.name}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Track your assigned examinations, deadlines, and submission progress.
+          </p>
+        </div>
+        <div className="absolute -right-10 -top-20 h-48 w-[420px] rounded-[50%] border border-[#d5e8f5] opacity-70" />
+        <div className="absolute right-20 top-4 h-32 w-64 rounded-[50%] border border-[#d5e8f5] opacity-60" />
+        <div className="absolute right-6 top-5 hidden text-xs text-slate-500 md:block">
+          {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
       </div>
-      <div className="absolute -right-10 -top-20 h-48 w-[420px] rounded-[50%] border border-[#d5e8f5] opacity-70" />
-      <div className="absolute right-20 top-4 h-32 w-64 rounded-[50%] border border-[#d5e8f5] opacity-60" />
-      <div className="absolute right-6 top-5 hidden text-xs text-slate-500 md:block">
-        {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard icon={FileText} count={counts.Draft} title="Draft Papers" subtitle="Not yet submitted" tone="blue" onClick={() => { setPaperFilter("Draft"); setView("papers"); }} />
+        <StatCard icon={Clock3} count={counts.Submitted} title="Submitted Papers" subtitle="Under system processing" tone="amber" onClick={() => { setPaperFilter("Submitted"); setView("papers"); }} />
+        <StatCard icon={FileCheck2} count={counts.Finalized} title="Finalized Papers" subtitle="Ready for scheduled release" tone="green" onClick={() => { setPaperFilter("Finalized"); setView("papers"); }} />
+        <StatCard icon={AlertCircle} count={counts.Action} title="Action Required" subtitle="Needs your attention" tone="purple" onClick={() => { setPaperFilter("Action Required"); setView("papers"); }} />
       </div>
-    </div>
 
-    {/* Summary cards */}
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard icon={FileText} count={counts.Draft} title="Draft Papers" subtitle="Not yet submitted" tone="blue" onClick={() => { setPaperFilter("Draft"); setView("papers"); }} />
-      <StatCard icon={Clock3} count={counts.Submitted} title="Submitted Papers" subtitle="Under system processing" tone="amber" onClick={() => { setPaperFilter("Submitted"); setView("papers"); }} />
-      <StatCard icon={FileCheck2} count={counts.Finalized} title="Finalized Papers" subtitle="Ready for scheduled release" tone="green" onClick={() => { setPaperFilter("Finalized"); setView("papers"); }} />
-      <StatCard icon={AlertCircle} count={counts.Action} title="Action Required" subtitle="Needs your attention" tone="purple" onClick={() => { setPaperFilter("Action Required"); setView("papers"); }} />
-    </div>
+      {/* Main dashboard layout */}
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Left column: Assigned Tasks + Recent Activity */}
+        <div className="space-y-5">
+          {/* Assigned Tasks */}
+          <Card className="overflow-hidden">
+            <SectionHeader icon={ClipboardList} title="Assigned Tasks" />
 
-    {/* Main dashboard layout */}
-    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-  {/* Left column: Assigned Tasks + Recent Activity */}
-  <div className="space-y-5">
-    {/* Assigned Tasks */}
-    <Card className="overflow-hidden">
-      <SectionHeader icon={ClipboardList} title="Assigned Tasks" />
+            <div className="divide-y divide-slate-100">
+              {(showAllTasks ? assignedTasks : assignedTasks.slice(0, 2)).map((task) => {
+                const progress = Math.min(100, Math.round((task.completed / task.required) * 100));
+                const completed = task.completed >= task.required;
 
-      <div className="divide-y divide-slate-100">
-        {(showAllTasks ? assignedTasks : assignedTasks.slice(0, 2)).map((task) => {
-          const progress = Math.min(100, Math.round((task.completed / task.required) * 100));
-          const completed = task.completed >= task.required;
+                return (
+                  <div key={task.id} className="p-5 transition hover:bg-slate-50/70">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-[#1765a0]">{task.id}</span>
+                          <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${completed ? "bg-emerald-50 text-emerald-700" : task.completed > 0 ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
+                            {completed ? "Completed" : task.status}
+                          </span>
+                        </div>
 
-          return (
-            <div key={task.id} className="p-5 transition hover:bg-slate-50/70">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-[#1765a0]">{task.id}</span>
-                    <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${completed ? "bg-emerald-50 text-emerald-700" : task.completed > 0 ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
-                      {completed ? "Completed" : task.status}
-                    </span>
+                        <h3 className="mt-2 text-sm font-semibold text-slate-900">{task.examination}</h3>
+                        <p className="mt-1 text-xs text-slate-500">Subject: {task.subject}</p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">Deadline</p>
+                        <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold text-slate-700">
+                          <CalendarClock size={14} className="text-amber-600" />
+                          {task.deadline}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                        <span className="text-slate-500">Question completion</span>
+                        <span className="font-semibold text-slate-700">{task.completed} of {task.required}</span>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-blue-600"}`} style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex justify-end">
+                      <button type="button" onClick={() => navigate("create-questions")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#1765a0] transition hover:border-blue-200 hover:bg-blue-50">
+                        {completed ? "View assignment" : "Continue assignment"}
+                        <ChevronRight size={15} />
+                      </button>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <h3 className="mt-2 text-sm font-semibold text-slate-900">{task.examination}</h3>
-                  <p className="mt-1 text-xs text-slate-500">Subject: {task.subject}</p>
-                </div>
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-5 py-3">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllTasks ? assignedTasks.length : 2, assignedTasks.length)} of {assignedTasks.length} assignments
+              </p>
 
-                <div className="text-right">
-                  <p className="text-xs text-slate-500">Deadline</p>
-                  <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold text-slate-700">
-                    <CalendarClock size={14} className="text-amber-600" />
-                    {task.deadline}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="mb-2 flex items-center justify-between gap-3 text-xs">
-                  <span className="text-slate-500">Question completion</span>
-                  <span className="font-semibold text-slate-700">{task.completed} of {task.required}</span>
-                </div>
-
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-blue-600"}`} style={{ width: `${progress}%` }} />
-                </div>
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button type="button" onClick={() => navigate("create-questions")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#1765a0] transition hover:border-blue-200 hover:bg-blue-50">
-                  {completed ? "View assignment" : "Continue assignment"}
-                  <ChevronRight size={15} />
+              {assignedTasks.length > 2 && (
+                <button type="button" onClick={() => setShowAllTasks((current) => !current)} className="inline-flex items-center gap-1 text-xs font-semibold text-[#1264a3] hover:text-[#0b4b7a]">
+                  {showAllTasks ? "Show fewer" : "View all assignments"}
+                  <ChevronRight size={14} />
                 </button>
-              </div>
+              )}
             </div>
-          );
-        })}
-      </div>
+          </Card>
 
-      <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-5 py-3">
-        <p className="text-xs text-slate-500">
-          Showing {Math.min(showAllTasks ? assignedTasks.length : 2, assignedTasks.length)} of {assignedTasks.length} assignments
-        </p>
+          {/* Recent Activity */}
+          <Card className="overflow-hidden">
+            <SectionHeader icon={History} title="Recent Activity" />
 
-        {assignedTasks.length > 2 && (
-          <button type="button" onClick={() => setShowAllTasks((current) => !current)} className="inline-flex items-center gap-1 text-xs font-semibold text-[#1264a3] hover:text-[#0b4b7a]">
-            {showAllTasks ? "Show fewer" : "View all assignments"}
-            <ChevronRight size={14} />
-          </button>
-        )}
-      </div>
-    </Card>
+            <div className="divide-y divide-slate-100">
+              {recentActivity.slice(0, 4).map((item) => (
+                <div key={item.id} className="flex gap-3 px-4 py-4">
+                  <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${item.type === "success" ? "bg-emerald-500" : item.type === "warning" ? "bg-amber-500" : "bg-blue-500"}`} />
 
-    {/* Recent Activity */}
-    <Card className="overflow-hidden">
-      <SectionHeader icon={History} title="Recent Activity" />
-
-      <div className="divide-y divide-slate-100">
-        {recentActivity.slice(0, 4).map((item) => (
-          <div key={item.id} className="flex gap-3 px-4 py-4">
-            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${item.type === "success" ? "bg-emerald-500" : item.type === "warning" ? "bg-amber-500" : "bg-blue-500"}`} />
-
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-800">{item.title}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">{item.description}</p>
-              <p className="mt-1.5 text-[10px] text-slate-400">{item.time}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-800">{item.title}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{item.description}</p>
+                    <p className="mt-1.5 text-[10px] text-slate-400">{item.time}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
 
-      <button type="button" onClick={() => navigate("activity")} className="flex w-full items-center justify-center gap-1 border-t border-slate-100 px-4 py-3 text-xs font-semibold text-[#1264a3] transition hover:bg-slate-50">
-        View activity log <ChevronRight size={14} />
-      </button>
-    </Card>
-  </div>
+            <button type="button" onClick={() => navigate("activity")} className="flex w-full items-center justify-center gap-1 border-t border-slate-100 px-4 py-3 text-xs font-semibold text-[#1264a3] transition hover:bg-slate-50">
+              View activity log <ChevronRight size={14} />
+            </button>
+          </Card>
+        </div>
 
-  {/* Right column: Schedule + Deadlines + Calendar */}
-  <div className="space-y-5">
-    <UpcomingSchedule Card={Card} SectionHeader={SectionHeader} navigate={navigate} />
+        {/* Right column: Schedule + Deadlines + Calendar */}
+        <div className="space-y-5">
+          <UpcomingSchedule Card={Card} SectionHeader={SectionHeader} navigate={navigate} />
 
-    {/* Upcoming Deadlines */}
-    <Card className="overflow-hidden">
-      <SectionHeader icon={CalendarClock} title="Upcoming Deadlines" />
+          {/* Upcoming Deadlines */}
+          <Card className="overflow-hidden">
+            <SectionHeader icon={CalendarClock} title="Upcoming Deadlines" />
 
-      <div className="space-y-4 p-5">
-        {assignedTasks
-          .filter((task) => task.completed < task.required)
-          .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-          .slice(0, 3)
-          .map((task) => (
-            <div key={task.id} className="flex gap-3">
-              <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
-                <span className="text-[9px] font-semibold uppercase text-slate-500">{task.deadline.split(" ")[1]}</span>
-                <span className="text-sm font-bold text-slate-800">{task.deadline.split(" ")[0]}</span>
-              </div>
+            <div className="space-y-4 p-5">
+              {assignedTasks
+                .filter((task) => task.completed < task.required)
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                .slice(0, 3)
+                .map((task) => (
+                  <div key={task.id} className="flex gap-3">
+                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
+                      <span className="text-[9px] font-semibold uppercase text-slate-500">{task.deadline.split(" ")[1]}</span>
+                      <span className="text-sm font-bold text-slate-800">{task.deadline.split(" ")[0]}</span>
+                    </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-slate-800">{task.subject}</p>
-                <p className="mt-1 text-xs text-slate-500">{task.id} · Due {task.deadline}</p>
-                <p className="mt-1 text-xs font-medium text-amber-700">{task.required - task.completed} questions remaining</p>
-              </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-800">{task.subject}</p>
+                      <p className="mt-1 text-xs text-slate-500">{task.id} · Due {task.deadline}</p>
+                      <p className="mt-1 text-xs font-medium text-amber-700">{task.required - task.completed} questions remaining</p>
+                    </div>
+                  </div>
+                ))}
+
+              {assignedTasks.every((task) => task.completed >= task.required) && (
+                <p className="py-3 text-sm text-slate-500">No pending assignment deadlines.</p>
+              )}
             </div>
-          ))}
+          </Card>
 
-        {assignedTasks.every((task) => task.completed >= task.required) && (
-          <p className="py-3 text-sm text-slate-500">No pending assignment deadlines.</p>
-        )}
+          <ExaminationCalendar
+            officialEvents={examinerEvents}
+            loading={eventsLoading}
+            error={eventsError}
+            onFetchEventDetail={fetchEventById}
+          />
+        </div>
       </div>
-    </Card>
-
-   <ExaminationCalendar />
-
-      </div>
-  </div>
-</div>
-
-);
+    </div>
+  );
 
   const MyPapers = () => (
     <div className="space-y-5">
@@ -1381,7 +1417,7 @@ useEffect(() => {
           You have been signed out of the N.E.T.R.A. Examiner Portal.
         </p>
 
-        <button onClick={() => navigate("dashboard")}className="mt-6 rounded-md bg-[#176bb0] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#125b95]">
+        <button onClick={() => navigate("dashboard")} className="mt-6 rounded-md bg-[#176bb0] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#125b95]">
           Sign In Again
         </button>
       </Card>
@@ -1399,13 +1435,13 @@ useEffect(() => {
       case "paper-detail":
         return <PaperDetail />;
       case "create-questions":
-      return <UploadQuestionPaper embedded />;
+        return <UploadQuestionPaper embedded />;
 
       case "activity":
         return <ActivityLog />;
 
       case "profile":
-        return <ExaminerProfile examiner={examiner}  />;
+        return <ExaminerProfile examiner={examiner} />;
 
       case "help":
         return <HelpPage />;
@@ -1426,7 +1462,7 @@ useEffect(() => {
         <div className="flex min-w-0 flex-1 flex-col">
           {Header()}
 
-         <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+          <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
             <div className="mx-auto w-full max-w-[1450px]">
               {renderPage()}
             </div>

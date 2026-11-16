@@ -36,108 +36,62 @@ router.get("/examiners", async (req, res) => {
         });
     }
 });
-
-
-// POST: Send notification to selected examiners
 router.post("/send", async (req, res) => {
-    const connection = await db.getConnection();
-
+    let connection;
+    let transactionStarted = false;
     try {
-        const { title, message, examinerIds } = req.body;
-        // Validate input
-        if (
-            !title?.trim() ||
-            !message?.trim() ||
-            !Array.isArray(examinerIds) ||
-            examinerIds.length === 0
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Title, message and at least one examiner are required."
-            });
-        }
-        const uniqueExaminerIds = [...new Set(examinerIds)];
-        if (
-            uniqueExaminerIds.some(
-                id => !Number.isSafeInteger(id) || id <= 0
-            )
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid examiner IDs."
-            });
-        }
+        connection = await db.getConnection();
+        const { title, message, examinerIds, audienceType } = req.body;
+        let uniqueExaminerIds = [];
+        if (typeof title !== "string" || !title.trim() || typeof message !== "string" || !message.trim() || !["ALL_EXAMINERS", "SELECTED_EXAMINERS"].includes(audienceType) || (audienceType === "SELECTED_EXAMINERS" && (!Array.isArray(examinerIds) || examinerIds.length === 0)))
+             return res.status(400).json({ success: false, message: "Title, message and valid recipients are required." });
         await connection.beginTransaction();
-
-        // Verify that all selected examiners are active
-        const placeholders = uniqueExaminerIds.map(() => "?").join(",");
-        const [examiners] = await connection.execute(
-            `SELECT id FROM examiners
-             WHERE id IN (${placeholders})
-             AND account_status = 'ACTIVE'`,
-            uniqueExaminerIds
-        );
-        if (examiners.length !== uniqueExaminerIds.length) {
-            await connection.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "One or more selected examiners are invalid or inactive."
-            });
-        }
-        // Insert notification
-        const [notificationResult] = await connection.execute(
-            `INSERT INTO notifications (title, message)
-             VALUES (?, ?)`,
-            [title.trim(), message.trim()]
-        );
-        const notificationId = notificationResult.insertId;
-
-        // Insert selected recipients
-        const recipientValues = uniqueExaminerIds
-            .map(() => "(?, ?)")
-            .join(", ");
-
-        const recipientParams = uniqueExaminerIds.flatMap(id => [
-            notificationId,
-            id
-        ]);
-        await connection.execute(
-            `INSERT INTO notification_recipients
-             (notification_id, examiner_id)
-             VALUES ${recipientValues}`,
-            recipientParams
-        );
-         await connection.commit();
-         const io = req.app.get("io");
-         uniqueExaminerIds.forEach((examinerId) => {
-        io.to(`examiner_${examinerId}`).emit("notification:new", {
-        notificationId,
-        title: title.trim(),
-        message: message.trim(),
-        createdAt: new Date().toISOString(),
-        isRead: false
-        });
-    });
-        return res.status(201).json({
-            success: true,
-            message: "Notification sent successfully.",
-            data: {
-                notificationId,
-                recipientCount: uniqueExaminerIds.length
+        transactionStarted = true;
+        if (audienceType === "ALL_EXAMINERS") {
+            const [rows] = await connection.execute("SELECT id FROM examiners WHERE account_status = 'ACTIVE'");
+            uniqueExaminerIds = rows.map(row => row.id);
+        } else {
+            if (examinerIds.some(id => !Number.isSafeInteger(id) || id <= 0)) {
+                await connection.rollback();
+                transactionStarted = false;
+                return res.status(400).json({ success: false, message: "Invalid examiner IDs." });
             }
-        });
+            uniqueExaminerIds = [...new Set(examinerIds)];
+            const placeholders = uniqueExaminerIds.map(() => "?").join(",");
+            const [examiners] = await connection.execute(
+                `SELECT id FROM examiners WHERE id IN (${placeholders}) AND account_status = 'ACTIVE'`, uniqueExaminerIds);
+            if (examiners.length !== uniqueExaminerIds.length) {
+                await connection.rollback();
+                transactionStarted = false;
+                return res.status(400).json({ 
+                    success: false, message: "One or more selected examiners are invalid or inactive." });
+            }
+        }
+        if (uniqueExaminerIds.length === 0) {
+            await connection.rollback();
+            transactionStarted = false;
+            return res.status(400).json({ success: false, message: "No active examiners found." });
+        }
+        const [notificationResult] = await connection.execute
+        ("INSERT INTO notifications (title, message) VALUES (?, ?)", [title.trim(), message.trim()]);
+        const notificationId = notificationResult.insertId;
+        const recipientValues = uniqueExaminerIds.map(() => "(?, ?)").join(", ");
+        const recipientParams = uniqueExaminerIds.flatMap(id => [notificationId, id]);
+        await connection.execute
+        (`INSERT INTO notification_recipients (notification_id, examiner_id) VALUES ${recipientValues}`, recipientParams);
+        await connection.commit();
+        transactionStarted = false;
+        const io = req.app.get("io");
+        if (io)
+             uniqueExaminerIds.forEach(examinerId => io.to(`examiner_${examinerId}`).emit("notification:new", { notificationId, title: title.trim(), message: message.trim(), createdAt: new Date().toISOString(), isRead: false }));
+        return res.status(201).json({ 
+            success: true, message: "Notification sent successfully.", data: { notificationId, recipientCount: uniqueExaminerIds.length } });
     } catch (error) {
-        await connection.rollback();
-
+        if (connection && transactionStarted) await connection.rollback();
         console.error("Send Notification Error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Unable to send notification."
-        });
-
+        return res.status(500).json({ success: false, message: "Unable to send notification." });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 });
 

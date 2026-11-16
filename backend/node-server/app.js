@@ -3,6 +3,7 @@ const cors = require("cors");
 const notificationRoutes = require("./routes/NotificationRoutes");
 const examinerRoutes = require("./routes/ExaminerRoutes");
 const authRoutes = require("./routes/authRoutes");
+const eventRoutes = require("./routes/eventRoutes");
 const db = require("./db");
 
 const app = express();
@@ -29,8 +30,8 @@ app.get("/api/health/db", async (req, res) => {
         res.status(500).json({success: false, message: "Database connection failed", errorCode: error.code, errorMessage: error.message});
     }
 });
-
 app.use("/api/admin/examiners", examinerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/events",eventRoutes);
 module.exports = app;
