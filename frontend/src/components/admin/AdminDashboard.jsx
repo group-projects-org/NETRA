@@ -34,7 +34,7 @@ const initialExaminers = [
     department: "Mathematics",
     status: "Pending",
   },
-  
+
 ];
 
 const initialSchedules = [
@@ -121,26 +121,37 @@ function StatCard({ icon: Icon, count, title, subtitle }) {
 }
 
 export default function AdminDashboard() {
-const [view, setView] = useState("dashboard");
-const [mobileSidebar, setMobileSidebar] = useState(false);
-const [examiners, setExaminers] = useState(initialExaminers);
-const [schedules,setSchedules] = useState(initialSchedules);
-const [notifications, setNotifications] = useState(initialNotifications);
-const [calendarEvents, setCalendarEvents] = useState([
-  { id: 1, day: 6, month: 9, year: 2026, title: "Exam Commencement - NET", time: "10:00 AM", recipients: "All Examiners, Superintendents" },
-  { id: 2, day: 15, month: 9, year: 2026, title: "National Eligibility Test", time: "10:00 AM", recipients: "All Examiners" },
-  { id: 3, day: 15, month: 9, year: 2026, title: "PM Admin Meeting", time: "02:00 PM", recipients: "Superintendents" },
-  { id: 4, day: 20, month: 9, year: 2026, title: "State Services Prelims", time: "02:00 PM", recipients: "All Examiners, Superintendents" },
-  { id: 5, day: 28, month: 9, year: 2026, title: "UGC NET", time: "09:30 AM", recipients: "All Examiners, Superintendents" },
-]);
-const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 9, 1));
-const [selectedDate, setSelectedDate] = useState({ day: null, month: 9, year: 2026 });
-const [eventTitle, setEventTitle] = useState("");
-const [showEventModal, setShowEventModal] = useState(false);
-const [newEvent, setNewEvent] = useState({
-  title: "", date: "2026-10-17", time: "10:00", recipients: "All Examiners, Superintendents", message: "",
-});
-const [eventMessage, setEventMessage] = useState("");
+  const [view, setView] = useState("dashboard");
+  const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [examiners, setExaminers] = useState(initialExaminers);
+  const [schedules, setSchedules] = useState(initialSchedules);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [calendarEvents, setCalendarEvents] = useState([
+    { id: 1, day: 6, month: 9, year: 2026, title: "Exam Commencement - NET", time: "10:00 AM", recipients: "All Examiners, Superintendents" },
+    { id: 2, day: 15, month: 9, year: 2026, title: "National Eligibility Test", time: "10:00 AM", recipients: "All Examiners" },
+    { id: 3, day: 15, month: 9, year: 2026, title: "PM Admin Meeting", time: "02:00 PM", recipients: "Superintendents" },
+    { id: 4, day: 20, month: 9, year: 2026, title: "State Services Prelims", time: "02:00 PM", recipients: "All Examiners, Superintendents" },
+    { id: 5, day: 28, month: 9, year: 2026, title: "UGC NET", time: "09:30 AM", recipients: "All Examiners, Superintendents" },
+  ]);
+  const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 9, 1));
+  const [selectedDate, setSelectedDate] = useState({ day: null, month: 9, year: 2026 });
+  const [eventTitle, setEventTitle] = useState("");
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10),
+    startTime: "10:00",
+    endTime: "13:00",
+    audienceType: "ALL_EXAMINERS",
+    message: "",
+  });
+  const [eventMessage, setEventMessage] = useState("");
+  const [eventError, setEventError] = useState("");
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [eventDepartment, setEventDepartment] = useState("");
+  const [eventDepartmentExaminers, setEventDepartmentExaminers] = useState([]);
+  const [eventSelectedExaminerIds, setEventSelectedExaminerIds] = useState([]);
+  const [loadingEventExaminers, setLoadingEventExaminers] = useState(false);
 
   // Notification composer state
   const [showNotificationModal, setShowNotificationModal] = useState(false);
@@ -153,6 +164,7 @@ const [eventMessage, setEventMessage] = useState("");
   const [sendingNotification, setSendingNotification] = useState(false);
   const [notificationError, setNotificationError] = useState("");
   const [notificationSuccess, setNotificationSuccess] = useState("");
+  const [notificationAudienceType, setNotificationAudienceType] = useState("ALL_EXAMINERS");
   const pendingExaminers = examiners.filter(
     (examiner) => examiner.status === "Pending"
   ).length;
@@ -171,7 +183,7 @@ const [eventMessage, setEventMessage] = useState("");
   const rejectExaminer = (id) => {
     setExaminers((current) =>
       current.map((examiner) =>
-        examiner.id === id ? { ...examiner, status: "Rejected" }: examiner
+        examiner.id === id ? { ...examiner, status: "Rejected" } : examiner
       ));
   };
 
@@ -179,16 +191,16 @@ const [eventMessage, setEventMessage] = useState("");
     setView(nextView);
     setMobileSidebar(false);
   };
-  
-  const handleLogout = () => {
-  const confirmed = window.confirm(
-    "Are you sure you want to sign out of N.E.T.R.A.?"
-  );
 
-  if (confirmed) {
-    window.location.href = "/";
-  }
-};
+  const handleLogout = () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to sign out of N.E.T.R.A.?"
+    );
+
+    if (confirmed) {
+      window.location.href = "/";
+    }
+  };
 
   const openNotificationModal = () => {
     setNotificationTitle("");
@@ -199,8 +211,17 @@ const [eventMessage, setEventMessage] = useState("");
     setNotificationError("");
     setNotificationSuccess("");
     setShowNotificationModal(true);
+    setNotificationAudienceType("ALL_EXAMINERS");
   };
-
+  const handleNotificationAudienceChange = (event) => { 
+    const value = event.target.value; 
+    setNotificationAudienceType(value); 
+    setSelectedDepartment("");
+     setDepartmentExaminers([]); 
+     setSelectedExaminerIds([]); 
+     setNotificationError(""); 
+     setNotificationSuccess(""); 
+    };
   const handleDepartmentChange = async (event) => {
     const department = event.target.value;
     setSelectedDepartment(department);
@@ -263,10 +284,7 @@ const [eventMessage, setEventMessage] = useState("");
       setNotificationError("Please enter both notification title and message.");
       return;
     }
-    if (selectedExaminerIds.length === 0) {
-      setNotificationError("Please select at least one examiner.");
-      return;
-    }
+
     if (!API_BASE_URL) {
       setNotificationError("VITE_NODE_API_URL is not configured in the frontend .env file.");
       return;
@@ -280,7 +298,8 @@ const [eventMessage, setEventMessage] = useState("");
         body: JSON.stringify({
           title: notificationTitle.trim(),
           message: notificationMessage.trim(),
-          examinerIds: selectedExaminerIds,
+          audienceType: notificationAudienceType === "ALL_EXAMINERS" ? "ALL_EXAMINERS" : "SELECTED_EXAMINERS",
+          ...(notificationAudienceType === "DEPARTMENT_WISE" && { examinerIds: selectedExaminerIds }),
         }),
       });
       const data = await response.json();
@@ -290,7 +309,7 @@ const [eventMessage, setEventMessage] = useState("");
 
       setNotifications((current) => [
         {
-          id: data.notificationId ?? Date.now(),
+         id: data.data?.notificationId ?? Date.now(),
           title: notificationTitle.trim(),
           message: notificationMessage.trim(),
           time: "Just now",
@@ -303,6 +322,7 @@ const [eventMessage, setEventMessage] = useState("");
       setSelectedExaminerIds([]);
       setSelectedDepartment("");
       setDepartmentExaminers([]);
+      setNotificationAudienceType("ALL_EXAMINERS");
       window.setTimeout(() => setShowNotificationModal(false), 900);
     } catch (error) {
       setNotificationError(error.message || "Something went wrong while sending the notification.");
@@ -311,13 +331,65 @@ const [eventMessage, setEventMessage] = useState("");
     }
   };
 
+  // Event recipient selection is kept separate from the notification composer.
+  const handleEventDepartmentChange = async (event) => {
+    const department = event.target.value;
+    setEventDepartment(department);
+    setEventDepartmentExaminers([]);
+    setEventSelectedExaminerIds([]);
+    setEventError("");
+
+    if (!department) return;
+    if (!API_BASE_URL) {
+      setEventError("VITE_NODE_API_URL is not configured in the frontend .env file.");
+      return;
+    }
+
+    setLoadingEventExaminers(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/notifications/examiners?department=${encodeURIComponent(department)}`
+      );
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Unable to fetch examiners for this department.");
+      }
+
+      const examinerList = Array.isArray(data)
+        ? data
+        : data.examiners ?? data.data ?? [];
+      setEventDepartmentExaminers(examinerList);
+    } catch (error) {
+      setEventError(error.message || "Unable to load department examiners.");
+    } finally {
+      setLoadingEventExaminers(false);
+    }
+  };
+
+  const toggleEventExaminerSelection = (examinerId) => {
+    setEventSelectedExaminerIds((current) =>
+      current.includes(examinerId)
+        ? current.filter((id) => id !== examinerId)
+        : [...current, examinerId]
+    );
+  };
+
+  const toggleSelectAllEventExaminers = () => {
+    const allIds = eventDepartmentExaminers.map((examiner) => Number(examiner.id));
+    const allSelected = allIds.length > 0 && allIds.every((id) => eventSelectedExaminerIds.includes(id));
+    setEventSelectedExaminerIds((current) =>
+      allSelected
+        ? current.filter((id) => !allIds.includes(id))
+        : [...new Set([...current, ...allIds])]
+    );
+  };
+
   const Sidebar = () => (
     <>
       {mobileSidebar && (
-        <button aria-label="Close sidebar" onClick={() => setMobileSidebar(false)} className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"/>
+        <button aria-label="Close sidebar" onClick={() => setMobileSidebar(false)} className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" />
       )}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col bg-[#071c2f] text-white transition-transform duration-200 lg:static lg:translate-x-0 ${
-          mobileSidebar ? "translate-x-0" : "-translate-x-full"
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col bg-[#071c2f] text-white transition-transform duration-200 lg:static lg:translate-x-0 ${mobileSidebar ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand */}
@@ -344,16 +416,15 @@ const [eventMessage, setEventMessage] = useState("");
         {/* Navigation */}
         <nav className="px-4">
           {[
-            {id: "dashboard",label: "Dashboard",icon: LayoutDashboard,},
-            {id: "calendar",label: "Calendar",icon: CalendarDays,},
-            {id: "schedules",label: "Exam Schedule",icon: Clock3,},
-            {id: "examiners",label: "Examiner Approval",icon: UserCheck,},
-            {id: "activity",label: "Activity Log",icon: Activity,},
-          ].map((item) => { 
+            { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, },
+            { id: "calendar", label: "Calendar", icon: CalendarDays, },
+            { id: "schedules", label: "Exam Schedule", icon: Clock3, },
+            { id: "examiners", label: "Examiner Approval", icon: UserCheck, },
+            { id: "activity", label: "Activity Log", icon: Activity, },
+          ].map((item) => {
             const Icon = item.icon;
             return (
-              <button key={item.id} onClick={() => navigate(item.id)} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${
-                  view === item.id? "bg-[#164e7b] text-white shadow-sm": "text-slate-300 hover:bg-white/5 hover:text-white"
+              <button key={item.id} onClick={() => navigate(item.id)} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm transition ${view === item.id ? "bg-[#164e7b] text-white shadow-sm" : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon size={19} strokeWidth={1.8} />
@@ -370,7 +441,7 @@ const [eventMessage, setEventMessage] = useState("");
             <span>Admin Profile</span>
           </button>
 
-         <button onClick={handleLogout} className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white">
+          <button onClick={handleLogout} className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white">
             <LogOut size={19} strokeWidth={1.8} />
             <span>Logout</span>
           </button>
@@ -438,31 +509,109 @@ const [eventMessage, setEventMessage] = useState("");
       .sort((a, b) => new Date(a.year ?? year, a.month ?? month, a.day) - new Date(b.year ?? year, b.month ?? month, b.day))
       .slice(0, 4);
 
-    const createEvent = (e) => {
+    const createEvent = async (e) => {
       e.preventDefault();
-      if (!newEvent.title.trim() || !newEvent.date) return;
-      const [eventYear, eventMonth, eventDay] = newEvent.date.split("-").map(Number);
-      const dateLabel = new Date(eventYear, eventMonth - 1, eventDay).toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric",
-      });
-      const id = Date.now();
-      const createdEvent = {
-        id, day: eventDay, month: eventMonth - 1, year: eventYear,
+      setEventError("");
+      setEventMessage("");
+
+      if (!newEvent.title.trim() || !newEvent.date || !newEvent.startTime || !newEvent.endTime) {
+        setEventError("Please fill in the event title, date, start time and end time.");
+        return;
+      }
+      if (newEvent.endTime <= newEvent.startTime) {
+        setEventError("End time must be later than start time.");
+        return;
+      }
+      if (newEvent.audienceType === "SELECTED_EXAMINERS") {
+        if (!eventDepartment) {
+          setEventError("Please select a department.");
+          return;
+        }
+        if (eventSelectedExaminerIds.length === 0) {
+          setEventError("Please select at least one examiner.");
+          return;
+        }
+      }
+      if (!API_BASE_URL) {
+        setEventError("VITE_NODE_API_URL is not configured in the frontend .env file.");
+        return;
+      }
+
+      const payload = {
         title: newEvent.title.trim(),
-        time: newEvent.time ? new Date(`2000-01-01T${newEvent.time}`).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "Time not set",
-        recipients: newEvent.recipients,
+        message: newEvent.message.trim(),
+        eventDate: newEvent.date,
+        startTime: newEvent.startTime,
+        endTime: newEvent.endTime,
+        audienceType: newEvent.audienceType,
+        ...(newEvent.audienceType === "SELECTED_EXAMINERS" && {
+          department: eventDepartment,
+          examinerIds: eventSelectedExaminerIds,
+        }),
       };
-      setCalendarEvents((current) => [...current, createdEvent]);
-      setNotifications((current) => [{
-        id,
-        title: createdEvent.title,
-        message: `${newEvent.message.trim() || "Event scheduled"} · ${dateLabel} · Recipients: ${createdEvent.recipients}`,
-        time: "Just now",
-      }, ...current]);
-      setEventMessage("Event created and notification added to the dashboard. Actual delivery will require backend integration.");
-      setCalendarMonth(new Date(eventYear, eventMonth - 1, 1));
-      setNewEvent({ title: "", date: "2026-10-17", time: "10:00", recipients: "All Examiners, Superintendents", message: "" });
-      setShowEventModal(false);
+
+     
+      setCreatingEvent(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/events/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Unable to create the event.");
+        }
+
+        const [eventYear, eventMonth, eventDay] = newEvent.date.split("-").map(Number);
+        const dateLabel = new Date(eventYear, eventMonth - 1, eventDay).toLocaleDateString("en-GB", {
+          day: "2-digit", month: "short", year: "numeric",
+        });
+        const eventId = data.data?.eventId ?? Date.now();
+        const notificationId = data.data?.notificationId ?? eventId;
+        const recipientsLabel = newEvent.audienceType === "ALL_EXAMINERS"
+          ? "All Examiners"
+          : `${eventDepartment} Examiners`;
+        const formatTime = (time) => new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+          hour: "2-digit", minute: "2-digit",
+        });
+
+        const createdEvent = {
+          id: eventId,
+          day: eventDay,
+          month: eventMonth - 1,
+          year: eventYear,
+          title: newEvent.title.trim(),
+          time: `${formatTime(newEvent.startTime)} - ${formatTime(newEvent.endTime)}`,
+          recipients: recipientsLabel,
+        };
+
+        setCalendarEvents((current) => [...current, createdEvent]);
+        setNotifications((current) => [{
+          id: notificationId,
+          title: newEvent.title.trim(),
+          message: `${newEvent.message.trim() || "Event scheduled"} · ${dateLabel} · Recipients: ${recipientsLabel}`,
+          time: "Just now",
+        }, ...current]);
+        setCalendarMonth(new Date(eventYear, eventMonth - 1, 1));
+        setEventMessage(data.message || "Event created and notification sent successfully.");
+        setNewEvent({
+          title: "",
+          date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10),
+          startTime: "10:00",
+          endTime: "13:00",
+          audienceType: "ALL_EXAMINERS",
+          message: "",
+        });
+        setEventDepartment("");
+        setEventDepartmentExaminers([]);
+        setEventSelectedExaminerIds([]);
+        setShowEventModal(false);
+      } catch (error) {
+        setEventError(error.message || "Something went wrong while creating the event.");
+      } finally {
+        setCreatingEvent(false);
+      }
     };
 
     return (
@@ -543,7 +692,7 @@ const [eventMessage, setEventMessage] = useState("");
             <Card className="overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center gap-2.5"><CalendarDays size={19} className="text-[#1d5b88]" /><h2 className="text-[15px] font-semibold text-slate-900">Calendar</h2></div>
-                <button onClick={() => { setNewEvent((prev) => ({ ...prev, date: `${year}-${String(month + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}` })); setShowEventModal(true); }} className="inline-flex items-center gap-2 rounded-lg bg-[#176bb0] px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#125b95]"><Plus size={15} /> Create Event</button>
+                <button onClick={() => { setEventError(""); setEventDepartment(""); setEventDepartmentExaminers([]); setEventSelectedExaminerIds([]); setNewEvent({ title: "", date: `${year}-${String(month + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`, startTime: "10:00", endTime: "13:00", audienceType: "ALL_EXAMINERS", message: "" }); setShowEventModal(true); }} className="inline-flex items-center gap-2 rounded-lg bg-[#176bb0] px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#125b95]"><Plus size={15} /> Create Event</button>
               </div>
               <div className="p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -561,7 +710,7 @@ const [eventMessage, setEventMessage] = useState("");
                     const dayEvents = calendarEvents.filter((event) => event.day === day && (event.month ?? 9) === month && (event.year ?? 2026) === year);
                     const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
                     return <div key={i} className={`min-h-[58px] border-b border-r border-slate-100 p-1 sm:min-h-[66px] ${day ? "bg-white" : "bg-slate-50/50"}`}>
-                      {day && <><div className={`mb-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isToday ? "bg-[#176bb0] font-bold text-white" : "text-slate-600"}`}>{day}</div><div className="space-y-1">{dayEvents.slice(0, 2).map((event) => <button key={event.id} title={`${event.title} · ${event.time || ""} · ${event.recipients || ""}`} onClick={() => { setNewEvent({ title: event.title, date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`, time: "10:00", recipients: event.recipients || "All Examiners, Superintendents", message: "" }); setShowEventModal(true); }} className="block w-full truncate rounded border-l-2 border-[#1d5b88] bg-[#edf4fa] px-1 py-1 text-left text-[9px] font-medium leading-tight text-[#183d5b]">{event.title}</button>)}{dayEvents.length > 2 && <span className="text-[9px] text-slate-500">+{dayEvents.length - 2} more</span>}</div></>}
+                      {day && <><div className={`mb-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isToday ? "bg-[#176bb0] font-bold text-white" : "text-slate-600"}`}>{day}</div><div className="space-y-1">{dayEvents.slice(0, 2).map((event) => <button key={event.id} title={`${event.title} · ${event.time || ""} · ${event.recipients || ""}`} onClick={() => setEventMessage(`Selected event: ${event.title}. Event editing is not available yet.`)} className="block w-full truncate rounded border-l-2 border-[#1d5b88] bg-[#edf4fa] px-1 py-1 text-left text-[9px] font-medium leading-tight text-[#183d5b]">{event.title}</button>)}{dayEvents.length > 2 && <span className="text-[9px] text-slate-500">+{dayEvents.length - 2} more</span>}</div></>}
                     </div>;
                   })}
                 </div>
@@ -648,76 +797,82 @@ const [eventMessage, setEventMessage] = useState("");
                   </div>
                 </section>
 
-                {/* Right panel: department filter and examiner selection */}
+                {/* Right panel: recipient selection */}
                 <section className="flex min-h-[360px] flex-col p-5 sm:p-6">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900">Select Recipients</h3>
-                    <p className="mt-1 text-xs text-slate-500">Choose a department to load its active examiners.</p>
+                    <p className="mt-1 text-xs text-slate-500">Choose who should receive this notification.</p>
                   </div>
 
                   <label className="mt-4 block">
-                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Department <span className="text-red-500">*</span></span>
-                    <select
-                      value={selectedDepartment}
-                      onChange={handleDepartmentChange}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="">Select department</option>
-                      {DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Notify Recipients <span className="text-red-500">*</span></span>
+                    <select value={notificationAudienceType} onChange={handleNotificationAudienceChange} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100">
+                      <option value="ALL_EXAMINERS">All Examiners</option>
+                      <option value="DEPARTMENT_WISE">Department Wise</option>
                     </select>
                   </label>
 
-                  <div className="mt-5 flex items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-xs font-semibold text-slate-800">Available Examiners</h4>
-                      <p className="mt-0.5 text-[11px] text-slate-500">{departmentExaminers.length} examiner{departmentExaminers.length === 1 ? "" : "s"} found</p>
+                  {notificationAudienceType === "ALL_EXAMINERS" ? (
+                    <div className="mt-5 flex flex-1 flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                      <Bell size={24} className="mb-3 text-[#176bb0]" />
+                      <p className="text-sm font-semibold text-slate-800">All Examiners</p>
+                      <p className="mt-1 text-xs text-slate-500">This notification will be sent to all active examiners.</p>
                     </div>
-                    {departmentExaminers.length > 0 && (
-                      <button type="button" onClick={toggleSelectAllExaminers} className="text-xs font-semibold text-[#176bb0] hover:text-[#125b95]">
-                        {departmentExaminers.every((examiner) => selectedExaminerIds.includes(Number(examiner.id))) ? "Deselect All" : "Select All"}
-                      </button>
-                    )}
-                  </div>
+                  ) : (
+                    <>
+                      <label className="mt-4 block">
+                        <span className="mb-1.5 block text-xs font-semibold text-slate-700">Department <span className="text-red-500">*</span></span>
+                        <select value={selectedDepartment} onChange={handleDepartmentChange} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100">
+                          <option value="">Select department</option>
+                          {DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                        </select>
+                      </label>
 
-                  <div className="mt-3 min-h-[190px] flex-1 overflow-y-auto rounded-xl border border-slate-200">
-                    {loadingExaminers ? (
-                      <div className="flex h-full min-h-[190px] items-center justify-center gap-2 text-xs text-slate-500"><Loader2 size={17} className="animate-spin" /> Loading examiners...</div>
-                    ) : !selectedDepartment ? (
-                      <div className="flex h-full min-h-[190px] flex-col items-center justify-center px-4 text-center text-slate-400">
-                        <Search size={22} className="mb-2" />
-                        <p className="text-xs">Select a department to view examiners.</p>
+                      <div className="mt-5 flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-xs font-semibold text-slate-800">Available Examiners</h4>
+                          <p className="mt-0.5 text-[11px] text-slate-500">{departmentExaminers.length} examiner{departmentExaminers.length === 1 ? "" : "s"} found</p>
+                        </div>
+                        {departmentExaminers.length > 0 && (
+                          <button type="button" onClick={toggleSelectAllExaminers} className="text-xs font-semibold text-[#176bb0] hover:text-[#125b95]">
+                            {departmentExaminers.every((examiner) => selectedExaminerIds.includes(Number(examiner.id))) ? "Deselect All" : "Select All"}
+                          </button>
+                        )}
                       </div>
-                    ) : departmentExaminers.length === 0 ? (
-                      <div className="flex h-full min-h-[190px] items-center justify-center px-4 text-center text-xs text-slate-500">No active examiners found in this department.</div>
-                    ) : (
-                      <div className="divide-y divide-slate-100">
-                        {departmentExaminers.map((examiner) => {
-                          const examinerDbId = Number(examiner.id);
-                          const isSelected = selectedExaminerIds.includes(examinerDbId);
-                          return (
-                            <label key={examiner.id} className="flex cursor-pointer items-start gap-3 px-4 py-3.5 transition hover:bg-slate-50">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleExaminerSelection(examinerDbId)}
-                                className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#176bb0]"
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-xs font-semibold text-slate-800">{examiner.full_name || examiner.name || "Unnamed examiner"}</span>
-                                <span className="mt-1 block text-[11px] text-slate-500">{examiner.examiner_id || examiner.examinerId || ""}</span>
-                                <span className="mt-0.5 block break-all text-[11px] text-slate-500">{examiner.email || ""}</span>
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
-                    <span className="text-xs text-slate-600">Selected recipients</span>
-                    <span className="text-xs font-semibold text-slate-900">{selectedExaminerIds.length}</span>
-                  </div>
+                      <div className="mt-3 min-h-[190px] flex-1 overflow-y-auto rounded-xl border border-slate-200">
+                        {loadingExaminers ? (
+                          <div className="flex h-full min-h-[190px] items-center justify-center gap-2 text-xs text-slate-500"><Loader2 size={17} className="animate-spin" /> Loading examiners...</div>
+                        ) : !selectedDepartment ? (
+                          <div className="flex h-full min-h-[190px] flex-col items-center justify-center px-4 text-center text-slate-400"><Search size={22} className="mb-2" /><p className="text-xs">Select a department to view examiners.</p></div>
+                        ) : departmentExaminers.length === 0 ? (
+                          <div className="flex h-full min-h-[190px] items-center justify-center px-4 text-center text-xs text-slate-500">No active examiners found in this department.</div>
+                        ) : (
+                          <div className="divide-y divide-slate-100">
+                            {departmentExaminers.map((examiner) => {
+                              const examinerDbId = Number(examiner.id);
+                              const isSelected = selectedExaminerIds.includes(examinerDbId);
+                              return (
+                                <label key={examiner.id} className="flex cursor-pointer items-start gap-3 px-4 py-3.5 transition hover:bg-slate-50">
+                                  <input type="checkbox" checked={isSelected} onChange={() => toggleExaminerSelection(examinerDbId)} className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#176bb0]" />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-xs font-semibold text-slate-800">{examiner.full_name || examiner.name || "Unnamed examiner"}</span>
+                                    <span className="mt-1 block text-[11px] text-slate-500">{examiner.examiner_id || examiner.examinerId || ""}</span>
+                                    <span className="mt-0.5 block break-all text-[11px] text-slate-500">{examiner.email || ""}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
+                        <span className="text-xs text-slate-600">Selected recipients</span>
+                        <span className="text-xs font-semibold text-slate-900">{selectedExaminerIds.length}</span>
+                      </div>
+                    </>
+                  )}
                 </section>
               </div>
 
@@ -728,13 +883,13 @@ const [eventMessage, setEventMessage] = useState("");
               )}
 
               <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <p className="text-[11px] text-slate-500">{selectedExaminerIds.length} examiner{selectedExaminerIds.length === 1 ? "" : "s"} will receive this notification.</p>
+               <p className="text-[11px] text-slate-500">{notificationAudienceType === "ALL_EXAMINERS" ? "All active examiners will receive this notification." : `${selectedExaminerIds.length} examiners selected.`}</p>
                 <div className="flex justify-end gap-2">
                   <button type="button" disabled={sendingNotification} onClick={() => setShowNotificationModal(false)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">Cancel</button>
-                  <button type="submit" disabled={sendingNotification || loadingExaminers || !notificationTitle.trim() || !notificationMessage.trim() || selectedExaminerIds.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#176bb0] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#125b95] disabled:cursor-not-allowed disabled:opacity-50">
+                 <button type="submit" disabled={sendingNotification || loadingExaminers || !notificationTitle.trim() || !notificationMessage.trim() || (notificationAudienceType === "DEPARTMENT_WISE" && selectedExaminerIds.length === 0)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#176bb0] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#125b95] disabled:cursor-not-allowed disabled:opacity-50">
                     {sendingNotification ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                     {sendingNotification ? "Sending..." : "Send Notification"}
-                  </button>
+                 </button>
                 </div>
               </div>
             </form>
@@ -742,23 +897,110 @@ const [eventMessage, setEventMessage] = useState("");
         )}
 
         {showEventModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowEventModal(false); }}>
-            <form onSubmit={createEvent} className="my-8 w-full max-w-xl rounded-2xl bg-white shadow-2xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !creatingEvent) setShowEventModal(false); }}>
+            <form onSubmit={createEvent} className="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                <div><h2 className="text-lg font-semibold text-slate-900">Create examination event</h2><p className="mt-1 text-xs text-slate-500">Schedule an event and prepare its notification.</p></div>
-                <button type="button" onClick={() => setShowEventModal(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close"><X size={18} /></button>
-              </div>
-              <div className="space-y-4 px-6 py-5">
-                <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Event title *</span><input required value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} placeholder="e.g. Centre Allocation Deadline" className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100" /></label>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Date *</span><input required type="date" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" /></label>
-                  <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Time</span><input type="time" value={newEvent.time} onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" /></label>
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Create examination event</h2>
+                  <p className="mt-1 text-xs text-slate-500">Schedule an event and notify the selected examiners.</p>
                 </div>
-                <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notify recipients *</span><select value={newEvent.recipients} onChange={(e) => setNewEvent({ ...newEvent, recipients: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]"><option>All Examiners, Superintendents</option><option>All Examiners</option><option>All Centre Superintendents</option></select></label>
-                <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notification message</span><textarea rows="3" value={newEvent.message} onChange={(e) => setNewEvent({ ...newEvent, message: e.target.value })} placeholder="Add instructions or details for recipients..." className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" /></label>
-                <p className="text-xs leading-5 text-slate-500">This demo adds the event to the calendar and notification list. Actual delivery to users will be enabled when the backend is connected.</p>
+                <button type="button" disabled={creatingEvent} onClick={() => setShowEventModal(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50" aria-label="Close"><X size={18} /></button>
               </div>
-              <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4"><button type="button" onClick={() => setShowEventModal(false)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button><button type="submit" className="rounded-lg bg-[#176bb0] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#125b95]">Create event & notify</button></div>
+
+              <div className="space-y-4 px-6 py-5">
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">Event title *</span>
+                  <input required value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} placeholder="e.g. Centre Allocation Deadline" className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88] focus:ring-2 focus:ring-blue-100" />
+                </label>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Date *</span>
+                    <input required type="date" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">Start time *</span>
+                    <input required type="time" value={newEvent.startTime} onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-slate-700">End time *</span>
+                    <input required type="time" value={newEvent.endTime} min={newEvent.startTime} onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" />
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">Notify recipients *</span>
+                  <select value={newEvent.audienceType} onChange={(e) => { setNewEvent({ ...newEvent, audienceType: e.target.value }); setEventDepartment(""); setEventDepartmentExaminers([]); setEventSelectedExaminerIds([]); setEventError(""); }} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]">
+                    <option value="ALL_EXAMINERS">All Examiners</option>
+                    <option value="SELECTED_EXAMINERS">Department-wise selected examiners</option>
+                  </select>
+                </label>
+
+                {newEvent.audienceType === "SELECTED_EXAMINERS" && (
+                  <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-semibold text-slate-700">Department *</span>
+                      <select value={eventDepartment} onChange={handleEventDepartmentChange} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]">
+                        <option value="">Select department</option>
+                        {DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                      </select>
+                    </label>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800">Available examiners</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">{eventDepartmentExaminers.length} examiner{eventDepartmentExaminers.length === 1 ? "" : "s"} found</p>
+                      </div>
+                      {eventDepartmentExaminers.length > 0 && (
+                        <button type="button" onClick={toggleSelectAllEventExaminers} className="text-xs font-semibold text-[#176bb0] hover:text-[#125b95]">
+                          {eventDepartmentExaminers.every((examiner) => eventSelectedExaminerIds.includes(Number(examiner.id))) ? "Deselect All" : "Select All"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200">
+                      {loadingEventExaminers ? (
+                        <div className="flex min-h-24 items-center justify-center gap-2 text-xs text-slate-500"><Loader2 size={16} className="animate-spin" /> Loading examiners...</div>
+                      ) : !eventDepartment ? (
+                        <p className="p-5 text-center text-xs text-slate-500">Select a department to load examiners.</p>
+                      ) : eventDepartmentExaminers.length === 0 ? (
+                        <p className="p-5 text-center text-xs text-slate-500">No active examiners found in this department.</p>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          {eventDepartmentExaminers.map((examiner) => {
+                            const examinerDbId = Number(examiner.id);
+                            return (
+                              <label key={examiner.id} className="flex cursor-pointer items-start gap-3 px-3 py-2.5 hover:bg-slate-50">
+                                <input type="checkbox" checked={eventSelectedExaminerIds.includes(examinerDbId)} onChange={() => toggleEventExaminerSelection(examinerDbId)} className="mt-0.5 h-4 w-4 accent-[#176bb0]" />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-xs font-semibold text-slate-800">{examiner.full_name || examiner.name || "Unnamed examiner"}</span>
+                                  <span className="mt-0.5 block text-[11px] text-slate-500">{examiner.examiner_id || examiner.examinerId || ""} {examiner.email ? `· ${examiner.email}` : ""}</span>
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-right text-[11px] text-slate-500">{eventSelectedExaminerIds.length} examiner(s) selected</p>
+                  </div>
+                )}
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">Notification message</span>
+                  <textarea rows="3" value={newEvent.message} onChange={(e) => setNewEvent({ ...newEvent, message: e.target.value })} placeholder="Add instructions or details for recipients..." className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1d5b88]" />
+                </label>
+
+                {eventError && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2.5 text-xs text-red-700">{eventError}</p>}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+                <button type="button" disabled={creatingEvent} onClick={() => setShowEventModal(false)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={creatingEvent || loadingEventExaminers} className="inline-flex items-center gap-2 rounded-lg bg-[#176bb0] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#125b95] disabled:cursor-not-allowed disabled:opacity-60">
+                  {creatingEvent ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                  {creatingEvent ? "Creating..." : "Create event & notify"}
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -813,12 +1055,11 @@ const [eventMessage, setEventMessage] = useState("");
 
                   <td className="px-5 py-4">
                     <span
-                      className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                        examiner.status === "Approved"? "bg-emerald-50 text-emerald-700"
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium ${examiner.status === "Approved" ? "bg-emerald-50 text-emerald-700"
                           : examiner.status === "Rejected"
-                          ? "bg-red-50 text-red-700"
-                          : "bg-amber-50 text-amber-700"
-                      }`}
+                            ? "bg-red-50 text-red-700"
+                            : "bg-amber-50 text-amber-700"
+                        }`}
                     >
                       {examiner.status}
                     </span>
@@ -946,40 +1187,40 @@ const [eventMessage, setEventMessage] = useState("");
     );
   };
 
-  
+
 
   const renderPage = () => {
-      switch (view) {
+    switch (view) {
       case "dashboard": return Dashboard();
 
       case "calendar":
-      return (
-      <CalendarPage
-      calendarEvents={calendarEvents}
-      setCalendarEvents={setCalendarEvents}
-      selectedDate={selectedDate}
-      setSelectedDate={setSelectedDate}
-      eventTitle={eventTitle}
-      setEventTitle={setEventTitle}
-      setSchedules={setSchedules}
-    />
-  );
+        return (
+          <CalendarPage
+            calendarEvents={calendarEvents}
+            setCalendarEvents={setCalendarEvents}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            eventTitle={eventTitle}
+            setEventTitle={setEventTitle}
+            setSchedules={setSchedules}
+          />
+        );
 
       case "schedules":
-      return (
-    <SchedulePage
-      schedules={schedules}
-      setSchedules={setSchedules}
-    />
-  );
+        return (
+          <SchedulePage
+            schedules={schedules}
+            setSchedules={setSchedules}
+          />
+        );
 
-      case "examiners":return <ExaminerApproval />;
+      case "examiners": return <ExaminerApproval />;
 
-case "activity":
-  return <ActivityLog />;
+      case "activity":
+        return <ActivityLog />;
 
-case "profile":
-  return <AdminProfile admin={admin} />;
+      case "profile":
+        return <AdminProfile admin={admin} />;
 
 
       default: return <Dashboard />;
