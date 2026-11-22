@@ -1,9 +1,9 @@
 import { useState } from "react";
-import CalendarPage from "./CalendarPage";
 import SchedulePage from "./SchedulePage";
 import { Activity, Bell, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, LayoutDashboard, Loader2, LogOut, Menu, Plus, Search, Send, Shield, UserCheck, Users, X, } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 import AdminProfile from "./AdminProfile";
+import AddExaminer from "./AddExaminer";
 const admin = {
   name: "Mr. John Doe",
   id: "ADM-00001",
@@ -17,8 +17,11 @@ const API_BASE_URL = import.meta.env.VITE_NODE_API_URL?.replace(/\/$/, "");
 const DEPARTMENTS = [
   "Computer Science",
   "Information Technology",
-  "Science & Technology",
-  "Mathematics",
+  "Electronics",
+  "Mechanical Engineering",
+  "Civil Engineering",
+  "Electrical Engineering",
+  "Other",
 ];
 
 const initialExaminers = [
@@ -127,11 +130,11 @@ export default function AdminDashboard() {
   const [schedules, setSchedules] = useState(initialSchedules);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [calendarEvents, setCalendarEvents] = useState([
-    { id: 1, day: 6, month: 9, year: 2026, title: "Exam Commencement - NET", time: "10:00 AM", recipients: "All Examiners, Superintendents" },
-    { id: 2, day: 15, month: 9, year: 2026, title: "National Eligibility Test", time: "10:00 AM", recipients: "All Examiners" },
-    { id: 3, day: 15, month: 9, year: 2026, title: "PM Admin Meeting", time: "02:00 PM", recipients: "Superintendents" },
-    { id: 4, day: 20, month: 9, year: 2026, title: "State Services Prelims", time: "02:00 PM", recipients: "All Examiners, Superintendents" },
-    { id: 5, day: 28, month: 9, year: 2026, title: "UGC NET", time: "09:30 AM", recipients: "All Examiners, Superintendents" },
+    // { id: 1, day: 6, month: 9, year: 2026, title: "Exam Commencement - NET", time: "10:00 AM", recipients: "All Examiners, Superintendents" },
+    // { id: 2, day: 15, month: 9, year: 2026, title: "National Eligibility Test", time: "10:00 AM", recipients: "All Examiners" },
+    // { id: 3, day: 15, month: 9, year: 2026, title: "PM Admin Meeting", time: "02:00 PM", recipients: "Superintendents" },
+    // { id: 4, day: 20, month: 9, year: 2026, title: "State Services Prelims", time: "02:00 PM", recipients: "All Examiners, Superintendents" },
+    // { id: 5, day: 28, month: 9, year: 2026, title: "UGC NET", time: "09:30 AM", recipients: "All Examiners, Superintendents" },
   ]);
   const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 9, 1));
   const [selectedDate, setSelectedDate] = useState({ day: null, month: 9, year: 2026 });
@@ -165,28 +168,7 @@ export default function AdminDashboard() {
   const [notificationError, setNotificationError] = useState("");
   const [notificationSuccess, setNotificationSuccess] = useState("");
   const [notificationAudienceType, setNotificationAudienceType] = useState("ALL_EXAMINERS");
-  const pendingExaminers = examiners.filter(
-    (examiner) => examiner.status === "Pending"
-  ).length;
-
-  const approvedExaminers = examiners.filter(
-    (examiner) => examiner.status === "Approved"
-  ).length;
-
-  const approveExaminer = (id) => {
-    setExaminers((current) =>
-      current.map((examiner) =>
-        examiner.id === id ? { ...examiner, status: "Approved" } : examiner
-      ));
-  };
-
-  const rejectExaminer = (id) => {
-    setExaminers((current) =>
-      current.map((examiner) =>
-        examiner.id === id ? { ...examiner, status: "Rejected" } : examiner
-      ));
-  };
-
+  
   const navigate = (nextView) => {
     setView(nextView);
     setMobileSidebar(false);
@@ -417,9 +399,9 @@ export default function AdminDashboard() {
         <nav className="px-4">
           {[
             { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, },
-            { id: "calendar", label: "Calendar", icon: CalendarDays, },
+            // { id: "calendar", label: "Calendar", icon: CalendarDays, },
             { id: "schedules", label: "Exam Schedule", icon: Clock3, },
-            { id: "examiners", label: "Examiner Approval", icon: UserCheck, },
+            { id: "examiners", label: "Add Examiner", icon: UserCheck, },
             { id: "activity", label: "Activity Log", icon: Activity, },
           ].map((item) => {
             const Icon = item.icon;
@@ -501,8 +483,7 @@ export default function AdminDashboard() {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDay = new Date(year, month, 1).getDay();
     const today = new Date();
-    const upcomingEvents = calendarEvents
-      .filter((event) => {
+    const upcomingEvents = calendarEvents.filter((event) => {
         const eventDate = new Date(event.year ?? year, event.month ?? month, event.day);
         return eventDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate());
       })
@@ -549,8 +530,6 @@ export default function AdminDashboard() {
           examinerIds: eventSelectedExaminerIds,
         }),
       };
-
-     
       setCreatingEvent(true);
       try {
         const response = await fetch(`${API_BASE_URL}/api/events/create`, {
@@ -625,14 +604,6 @@ export default function AdminDashboard() {
             <Bell size={17} /> Send Notification
           </button>
         </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard icon={Users} count={examiners.length} title="Total Examiners" subtitle="Registered examiners" />
-          <StatCard icon={UserCheck} count={approvedExaminers} title="Approved Examiners" subtitle="Allowed to access portal" />
-          <StatCard icon={Clock3} count={pendingExaminers} title="Pending Approvals" subtitle="Needs administrator action" />
-          <StatCard icon={CalendarDays} count={schedules.length} title="Upcoming Exams" subtitle="Scheduled examinations" />
-        </div>
-
         <div className="grid items-start gap-5 xl:grid-cols-2">
           <div className="space-y-5">
             <Card className="overflow-hidden">
@@ -1008,105 +979,6 @@ export default function AdminDashboard() {
     );
   };
 
-  const ExaminerApproval = () => (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#071a3d]">
-          Examiner Approval
-        </h1>
-
-        <p className="mt-1 text-sm text-slate-500">
-          Review and approve examiner accounts before allowing portal access.
-        </p>
-      </div>
-
-      <Card className="overflow-hidden">
-        <SectionHeader icon={UserCheck} title="Examiner Accounts" />
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left">
-            <thead>
-              <tr className="border-b border-slate-100 bg-[#fbfcfe] text-xs text-slate-500">
-                <th className="px-5 py-3 font-medium">Examiner ID</th>
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Department</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {examiners.map((examiner) => (
-                <tr
-                  key={examiner.id}
-                  className="border-b border-slate-100 last:border-0"
-                >
-                  <td className="px-5 py-4 text-xs font-semibold text-slate-800">
-                    {examiner.id}
-                  </td>
-
-                  <td className="px-5 py-4 text-xs text-slate-600">
-                    {examiner.name}
-                  </td>
-
-                  <td className="px-5 py-4 text-xs text-slate-600">
-                    {examiner.department}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-md px-2.5 py-1 text-xs font-medium ${examiner.status === "Approved" ? "bg-emerald-50 text-emerald-700"
-                          : examiner.status === "Rejected"
-                            ? "bg-red-50 text-red-700"
-                            : "bg-amber-50 text-amber-700"
-                        }`}
-                    >
-                      {examiner.status}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {examiner.status === "Pending" && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => approveExaminer(examiner.id)}
-                          className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-                        >
-                          Approve
-                        </button>
-
-                        <button
-                          onClick={() => rejectExaminer(examiner.id)}
-                          className="rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-
-                    {examiner.status === "Approved" && (
-                      <span className="flex items-center gap-1 text-xs text-emerald-600">
-                        <CheckCircle2 size={14} />
-                        Approved
-                      </span>
-                    )}
-
-                    {examiner.status === "Rejected" && (
-                      <span className="text-xs text-red-600">
-                        Rejected
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-
-
   const ActivityLog = () => {
     const activityData = [
       {
@@ -1192,37 +1064,11 @@ export default function AdminDashboard() {
   const renderPage = () => {
     switch (view) {
       case "dashboard": return Dashboard();
-
-      case "calendar":
-        return (
-          <CalendarPage
-            calendarEvents={calendarEvents}
-            setCalendarEvents={setCalendarEvents}
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            eventTitle={eventTitle}
-            setEventTitle={setEventTitle}
-            setSchedules={setSchedules}
-          />
-        );
-
       case "schedules":
-        return (
-          <SchedulePage
-            schedules={schedules}
-            setSchedules={setSchedules}
-          />
-        );
-
-      case "examiners": return <ExaminerApproval />;
-
-      case "activity":
-        return <ActivityLog />;
-
-      case "profile":
-        return <AdminProfile admin={admin} />;
-
-
+        return (<SchedulePage schedules={schedules} setSchedules={setSchedules}/>);
+      case "examiners": return <AddExaminer />;
+      case "activity": return <ActivityLog />;
+      case "profile": return <AdminProfile admin={admin} />;
       default: return <Dashboard />;
     }
   };
@@ -1231,10 +1077,8 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#f4f7fa] text-slate-900">
       <div className="flex min-h-screen">
         {Sidebar()}
-
         <div className="flex min-w-0 flex-1 flex-col">
           {Header()}
-
           <main className="flex-1 overflow-x-hidden px-4 py-4 sm:px-6 lg:px-5 lg:py-5">
             <div className="mx-auto w-full max-w-[1450px]">
               {renderPage()}
