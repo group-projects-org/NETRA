@@ -92,7 +92,7 @@ const assignedTasks = [
     examination: "State Services Examination",
     subject: "General Studies",
     required: 20,
-    completed: 12,
+    completed: 0,
     deadline: "15 Nov 2026",
     status: "In Progress",
   },

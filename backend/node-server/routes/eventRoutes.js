@@ -114,7 +114,7 @@ router.post("/create", async (req, res) => {
 router.get("/my-events", verifyToken, allowRoles("EXAMINER"), async (req, res) => {
     try {
         const examinerId = req.user.id;
-
+        //inner join to fetch events for the logged-in examiner
         const [events] = await db.execute(
             `SELECT e.id, e.title, e.message, DATE_FORMAT(e.event_date, '%Y-%m-%d') AS event_date, e.start_time, e.end_time, e.created_at
              FROM events e
@@ -150,7 +150,7 @@ router.get("/:id", verifyToken, allowRoles("EXAMINER"), async (req, res) => {
                 message: "Invalid event ID."
             });
         }
-
+        //inner join to fetch event details for the logged-in examiner
         const [events] = await db.execute(
             `SELECT e.id, e.title, e.message, DATE_FORMAT(e.event_date, '%Y-%m-%d') AS event_date, e.start_time, e.end_time, e.created_at
              FROM events e
