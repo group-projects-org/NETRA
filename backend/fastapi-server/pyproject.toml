@@ -5,9 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "netra-fastapi-server"
 version = "0.1.0"
-description = "NETRA backend Python services (forensic steganography, ...)"
+description = "NETRA backend Python services (forensic steganography, secure document, ...)"
 requires-python = ">=3.11"
 dependencies = [
+    "cryptography>=42.0",
     "pymysql>=1.2.3",
     "python-dotenv>=1.2.4",
     "sqlalchemy>=2.1.6",
@@ -18,6 +19,8 @@ dependencies = [
 netra-encode = "forensic_steganography.encoder.__main__:main"
 netra-vision = "forensic_steganography.vision.__main__:main"
 netra-decode = "forensic_steganography.decoder.__main__:main"
+netra-secure-doc = "secure_document.__main__:main"
+netra-secure = "secure_document.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["forensic_steganography*"]
+include = ["forensic_steganography*", "secure_document*"]

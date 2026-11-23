@@ -83,6 +83,42 @@ python -m forensic_steganography.encoder input.pdf output.pdf --payload CID1007_
 
 `requirements.txt` installs the package in editable mode, making the `netra-encode` command available in the active environment. The payload must be ASCII and no longer than 16 characters. For available options, run `netra-encode --help`.
 
+### Secure Document Processing
+
+The secure-document package provides chunked AES-256-GCM container encryption and authenticated in-memory PDF rendering without writing unencrypted documents to disk. It uses the same Python environment and dependency installation as the FastAPI application.
+
+Set an encryption key in `backend/fastapi-server/.env` via `NETRA_DOCUMENT_KEY` or pass `--key` (32-byte raw string or 64-character hex):
+
+```powershell
+# Generate a 32-byte AES key
+netra-secure-doc keygen
+```
+
+From `backend/fastapi-server`, encrypt a PDF with either the console command or Python module:
+
+```powershell
+netra-secure-doc encrypt input.pdf output.ntr --key <KEY>
+```
+
+```powershell
+python -m secure_document encrypt input.pdf output.ntr --key <KEY>
+```
+
+Inspect or render a page in RAM to verify container integrity and in-memory rasterization (pass `--output` to save a PNG preview image):
+
+```powershell
+netra-secure-doc inspect output.ntr --key <KEY>
+netra-secure-doc render output.ntr --output page0.png --page 0 --dpi 150 --key <KEY>
+```
+
+To decrypt an `.ntr` file back to a PDF:
+
+```powershell
+netra-secure-doc decrypt output.ntr decrypted.pdf --key <KEY>
+```
+
+`requirements.txt` installs the package in editable mode, making the `netra-secure-doc` command available in the active environment. For available options, run `netra-secure-doc --help`.
+
 ## Verification
 
 Run the Python test suite from `backend/fastapi-server`. This runs both the FastAPI endpoint tests and the forensic-steganography tests, and reports Python source coverage:
