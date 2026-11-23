@@ -103,16 +103,20 @@ function generateQuestionPaper() {
     console.log("Unique Questions:", uniqueIds.size);
     return finalPaper;
 }
-// Execute algorithm
-try {
-    const questionPaper = generateQuestionPaper();
-    console.log("\n===== SELECTED QUESTIONS =====\n");
-    questionPaper.forEach((question, index) => {
-        console.log(
-            `${index + 1}. ${question.id} | ${question.topic} | ${question.difficulty} | ${question.examinerId}`
-        );
-    });
-    console.log("\nQuestion paper generated successfully!");
-} catch (error) {
-    console.error("\nSELECTION FAILED:", error.message);
+// Execute algorithm only when run directly
+if (require.main === module) {
+    try {
+        const questionPaper = generateQuestionPaper();
+        console.log("\n===== SELECTED QUESTIONS =====\n");
+        questionPaper.forEach((question, index) => {
+            console.log(
+                `${index + 1}. ${question.id} | ${question.topic} | ${question.difficulty} | ${question.examinerId}`
+            );
+        });
+        console.log("\nQuestion paper generated successfully!");
+    } catch (error) {
+        console.error("\nSELECTION FAILED:", error.message);
+    }
 }
+
+module.exports = { secureRandomInt, secureShuffle, validateDataset, generateQuestionPaper };
