@@ -58,6 +58,7 @@ coverage.xml
 .coverage
 **/.coverage
 .nyc_output/
+htmlcov/
 
 # ML / data generated locally
 *.pkl
@@ -73,3 +74,4 @@ coverage.xml
 # Bacckend Reports and Supporting Files
 reports/
 *.pdf
+*.ntr
