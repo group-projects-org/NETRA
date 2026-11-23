@@ -49,6 +49,11 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Run backend tests
+        env:
+          DB_HOST: "127.0.0.1"
+          DB_USER: "netra_test"
+          DB_PASSWORD: "netra_test"
+          DB_NAME: "netra_test"
         run: python -m pytest tests/ -v
 
   node-server-tests:
@@ -75,7 +80,13 @@ jobs:
         run: npm ci
 
       - name: Run Node.js tests
-        run: node --test
+        env:
+          DB_HOST: "127.0.0.1"
+          DB_USER: "test"
+          DB_PASSWORD: "test"
+          DB_NAME: "netra_test"
+          JWT_SECRET: "ci-test-secret-key"
+        run: npm test
 
   frontend-tests:
     name: Frontend Tests and Build
@@ -101,10 +112,10 @@ jobs:
         run: npm ci
 
       - name: Run frontend tests
-        run: npx vitest run
+        run: npm test
 
       - name: Build frontend
-        run: npx vite build
+        run: npm run build
 
   ci-required:
     name: CI Required

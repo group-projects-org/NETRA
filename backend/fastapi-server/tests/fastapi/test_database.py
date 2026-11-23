@@ -1,6 +1,6 @@
 import os
-import sys
-import subprocess
+import importlib
+import pytest
 from unittest.mock import MagicMock, patch
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -27,19 +27,18 @@ def test_check_database_connection_false():
         assert check_database_connection() is False
 
 def test_missing_database_variables_raises_runtime_error():
-    # Run a python command without DB_HOST to verify RuntimeError is raised
-    env = os.environ.copy()
-    env.pop("DB_HOST", None)
-    env.pop("DB_USER", None)
-    env.pop("DB_NAME", None)
-
-    code = "import common.database"
-    proc = subprocess.run(
-        [sys.executable, "-c", code],
-        cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")),
-        env=env,
-        capture_output=True,
-        text=True,
+    with patch.dict(os.environ, {"DB_HOST": "", "DB_USER": "", "DB_NAME": ""}, clear=False), patch("dotenv.load_dotenv"):
+        with pytest.raises(RuntimeError, match="Missing database environment variables"):
+            import common.database
+            importlib.reload(common.database)
+    # Restore valid state for other tests
+    os.environ.update(
+        {
+            "DB_HOST": "127.0.0.1",
+            "DB_USER": "netra_test",
+            "DB_PASSWORD": "netra_test",
+            "DB_NAME": "netra_test",
+        }
     )
-    assert proc.returncode != 0
-    assert "Missing database environment variables" in proc.stderr
+    import common.database
+    importlib.reload(common.database)

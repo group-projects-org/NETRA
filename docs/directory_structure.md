@@ -4,9 +4,15 @@ This document describes the maintained source, test, and configuration layout. L
 
 ```text
 NETRA/
+|-- .github/
+|   `-- workflows/
+|       `-- ci.yml                          # Continuous integration workflow
+|-- .gitignore
 |-- LICENSE
 |-- README.md
 |-- docs/
+|   |-- ENCODER.md
+|   |-- NETRA-Logo.jpeg
 |   `-- directory_structure.md
 |-- backend/
 |   |-- fastapi-server/
@@ -18,7 +24,7 @@ NETRA/
 |   |   |-- common/
 |   |   |   `-- database.py                 # SQLAlchemy/MySQL connection
 |   |   |-- routes/
-|   |   |   `-- health.py
+|   |   |   `-- health.py                   # Health check and diagnostic routes
 |   |   |-- forensic_steganography/
 |   |   |   |-- __init__.py
 |   |   |   |-- core/
@@ -41,7 +47,11 @@ NETRA/
 |   |   `-- tests/
 |   |       |-- __init__.py
 |   |       |-- fastapi/
-|   |       |   `-- test_endpoints.py
+|   |       |   |-- conftest.py
+|   |       |   |-- test_database.py
+|   |       |   |-- test_endpoints.py
+|   |       |   |-- test_health_routes.py
+|   |       |   `-- test_main_app.py
 |   |       `-- forensic_steganography/
 |   |           |-- __init__.py
 |   |           |-- conftest.py
@@ -53,35 +63,68 @@ NETRA/
 |   |           `-- test_tile.py
 |   `-- node-server/
 |       |-- .env.example
+|       |-- app.js                         # Express application and routes mounting
 |       |-- db.js                          # MySQL connection pool
-|       |-- app.js                         # Express application and middleware
-|       |-- index.js                       # Express application entry point
+|       |-- index.js                       # HTTP and Socket.IO server entry point
 |       |-- package.json
 |       |-- package-lock.json
 |       |-- test-api.http
-|       |-- tests/
-|       |   `-- api/
-|       |       `-- app.test.js
-|       `-- routes/
-|           |-- authRoutes.js
-|           `-- ExaminerRoutes.js
+|       |-- middleware/
+|       |   |-- authMiddleware.js          # JWT authentication middleware
+|       |   `-- roleMiddleware.js          # Role-based authorization middleware
+|       |-- routes/
+|       |   |-- authRoutes.js              # Authentication (Examiner login)
+|       |   |-- eventRoutes.js             # Examination events and scheduling
+|       |   |-- ExaminerRoutes.js          # Examiner registration and management
+|       |   `-- NotificationRoutes.js      # Notifications and real-time broadcasts
+|       |-- stochastic-selection/
+|       |   |-- index.js                   # Question paper randomized selection
+|       |   `-- data/
+|       |       |-- blueprint.js           # Topic and difficulty distribution blueprint
+|       |       `-- mockQuestion.js        # Question dataset for generation
+|       `-- tests/
+|           |-- api/
+|           |   |-- app.test.js
+|           |   `-- routes.test.js
+|           |-- middleware/
+|           |   |-- authMiddleware.test.js
+|           |   `-- roleMiddleware.test.js
+|           `-- stochastic-selection/
+|               `-- stochastic.test.js
 `-- frontend/
+    |-- .env.example
+    |-- .gitignore
     |-- eslint.config.js
     |-- index.html
     |-- package.json
     |-- package-lock.json
     |-- vite.config.js
     |-- public/
+    |   |-- favicon.svg
+    |   |-- hero-bg.png
+    |   |-- icons.svg
+    |   |-- netra.png
+    |   `-- netra-login.png
     |-- tests/
     |   |-- setup.js
-    |   `-- components/
-    |       `-- Home.test.jsx
+    |   |-- App.test.jsx
+    |   |-- components/
+    |   |   |-- AddExaminer.test.jsx
+    |   |   |-- Home.test.jsx
+    |   |   |-- InfoPages.test.jsx
+    |   |   |-- Login.test.jsx
+    |   |   `-- ThemeToggle.test.jsx
+    |   `-- context/
+    |       `-- ThemeContext.test.jsx
     `-- src/
         |-- App.css
         |-- App.jsx
         |-- index.css
         |-- main.jsx
         |-- assets/
+        |   |-- hero.png
+        |   |-- react.svg
+        |   `-- vite.svg
         |-- context/
         |   |-- ThemeContext.jsx
         |   `-- ThemeContextValue.js
@@ -94,7 +137,6 @@ NETRA/
             |   |-- AddExaminer.jsx
             |   |-- AdminDashboard.jsx
             |   |-- AdminProfile.jsx
-            |   |-- CalendarPage.jsx
             |   |-- NotificationsPage.jsx
             |   `-- SchedulePage.jsx
             `-- examiner/
@@ -111,10 +153,11 @@ NETRA/
 
 | Component | Responsibility | Primary entry point |
 | --- | --- | --- |
-| Frontend | React user interface, built with Vite; npm scripts include ESLint and Vitest | `frontend/src/main.jsx` |
-| Node.js API | Express 5 API, MySQL-backed examiner operations; tests use Node's built-in test runner | `backend/node-server/index.js` |
+| Frontend | React 19 user interface, built with Vite and Tailwind CSS; tests run via Vitest | `frontend/src/main.jsx` |
+| Node.js API | Express 5 API with Socket.IO real-time notifications and MySQL backend; tests use Node's built-in test runner | `backend/node-server/index.js` |
+| Stochastic Selection | Algorithmic randomized question paper generation conforming to examination blueprints | `backend/node-server/stochastic-selection/index.js` |
 | FastAPI application | HTTP API, health checks, and API documentation; tests use pytest | `backend/fastapi-server/main.py` |
-| Forensic steganography | PDF watermark encoding, shared configuration, and CLI | `backend/fastapi-server/forensic_steganography/` |
+| Forensic steganography | PDF watermark encoding, shared configuration, FEC, and CLI | `backend/fastapi-server/forensic_steganography/` |
 
 Both backend services connect to MySQL. The Node and React projects use npm, as indicated by their `package-lock.json` files.
 

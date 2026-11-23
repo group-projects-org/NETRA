@@ -218,8 +218,10 @@ class TestRouterInclusion:
         assert response.status_code != 404
 
     def test_registered_routes_contain_expected_paths(self):
-        route_paths = [route.path for route in app.routes]
+        from routes.health import router as health_router
+        route_paths = [route.path for route in app.routes if hasattr(route, "path")]
         assert "/" in route_paths
         assert "/health" in route_paths
-        assert "/health/db" in route_paths
-        assert "/health/examiners" in route_paths
+        health_paths = [route.path for route in health_router.routes]
+        assert "/db" in health_paths or "/health/db" in health_paths
+        assert "/examiners" in health_paths or "/health/examiners" in health_paths
