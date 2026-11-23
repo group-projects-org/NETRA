@@ -159,11 +159,15 @@ function Login() {
 
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="portal"
+                className="mb-1.5 block text-xs font-medium text-slate-600"
+              >
                 Portal
               </label>
 
               <select
+                id="portal"
                 value={role}
                 onChange={(e) => {
                   setRole(e.target.value);

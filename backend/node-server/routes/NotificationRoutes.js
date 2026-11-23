@@ -40,22 +40,20 @@ router.post("/send", async (req, res) => {
     let connection;
     let transactionStarted = false;
     try {
-        connection = await db.getConnection();
         const { title, message, examinerIds, audienceType } = req.body;
         let uniqueExaminerIds = [];
         if (typeof title !== "string" || !title.trim() || typeof message !== "string" || !message.trim() || !["ALL_EXAMINERS", "SELECTED_EXAMINERS"].includes(audienceType) || (audienceType === "SELECTED_EXAMINERS" && (!Array.isArray(examinerIds) || examinerIds.length === 0)))
              return res.status(400).json({ success: false, message: "Title, message and valid recipients are required." });
+        if (audienceType === "SELECTED_EXAMINERS" && examinerIds.some(id => !Number.isSafeInteger(id) || id <= 0)) {
+             return res.status(400).json({ success: false, message: "Invalid examiner IDs." });
+        }
+        connection = await db.getConnection();
         await connection.beginTransaction();
         transactionStarted = true;
         if (audienceType === "ALL_EXAMINERS") {
             const [rows] = await connection.execute("SELECT id FROM examiners WHERE account_status = 'ACTIVE'");
             uniqueExaminerIds = rows.map(row => row.id);
         } else {
-            if (examinerIds.some(id => !Number.isSafeInteger(id) || id <= 0)) {
-                await connection.rollback();
-                transactionStarted = false;
-                return res.status(400).json({ success: false, message: "Invalid examiner IDs." });
-            }
             uniqueExaminerIds = [...new Set(examinerIds)];
             const placeholders = uniqueExaminerIds.map(() => "?").join(",");
             const [examiners] = await connection.execute(

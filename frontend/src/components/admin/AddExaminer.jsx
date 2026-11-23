@@ -344,7 +344,7 @@ export default function AddExaminer() {
             ) : (
 
               /* EXAMINER FORM */
-              <form onSubmit={handleSubmit}>
+              <form noValidate onSubmit={handleSubmit}>
 
                 <div className="px-6 py-7 sm:px-8">
 
