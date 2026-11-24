@@ -5,7 +5,8 @@ const examinerRoutes = require("./routes/ExaminerRoutes");
 const authRoutes = require("./routes/authRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const db = require("./db");
-
+const blueprintRoutes = require("./routes/BlueprintRoutes");
+const examinerBlueprintRoutes = require("./routes/ExaminerBlueprintRoutes");
 const app = express();
 const allowedOrigins = [
     process.env.FRONTEND_URL || "http://localhost:5173"
@@ -34,4 +35,6 @@ app.use("/api/admin/examiners", examinerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/events",eventRoutes);
+app.use("/api/admin/blueprints", blueprintRoutes);
+app.use("/api/examiner/blueprints", examinerBlueprintRoutes);
 module.exports = app;
