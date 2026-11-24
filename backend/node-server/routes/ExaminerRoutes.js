@@ -2,9 +2,8 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const db = require("../db");
-
+const { sendExaminerCredentials } = require("../services/mailjetService");
 const router = express.Router();
-
 // Generate a unique Examiner ID
 async function generateExaminerId() {
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -100,33 +99,57 @@ router.post("/add", async (req, res) => {
       ]
     );
 
+    // Send credentials to the examiner's email
+    try {
+      await sendExaminerCredentials({
+        fullName: fullName.trim(),
+        email: normalizedEmail,
+        examinerId,
+        temporaryPassword,
+      });
+    } catch (emailError) {
+      console.error("Examiner email error:", emailError.message);
+
+      // Remove the examiner if the email request failed
+      try {
+        await db.execute("DELETE FROM examiners WHERE id = ?", [
+          result.insertId,
+        ]);
+
+        return res.status(502).json({
+          success: false,
+          message:
+            "Examiner could not be created because the email could not be sent. Please try again later.",
+        });
+      } catch (deleteError) {
+        console.error("Examiner cleanup error:", deleteError.message);
+
+        return res.status(500).json({
+          success: false,
+          message:
+            "Examiner was created, but the email could not be sent. Please contact the administrator.",
+        });
+      }
+    }
+
+    // Email request accepted by Mailjet
     return res.status(201).json({
       success: true,
-      message: "Examiner created successfully.",
+      message: "Examiner created and credentials email sent successfully.",
       data: {
         id: result.insertId,
         examinerId,
         fullName: fullName.trim(),
         email: normalizedEmail,
-        temporaryPassword,
         accountStatus: "ACTIVE",
         mustChangePassword: true,
       },
     });
   } catch (error) {
-    console.error("Add Examiner Error:", error);
-
-    // Handles duplicate unique-key conflicts safely
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        success: false,
-        message: "Examiner ID or email already exists. Please try again.",
-      });
-    }
-
+    console.error("Create examiner error:", error);
     return res.status(500).json({
       success: false,
-      message: "Unable to create examiner. Please try again.",
+      message: "Internal server error while creating examiner.",
     });
   }
 });

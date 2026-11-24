@@ -9,7 +9,6 @@ router.get("/", verifyToken, allowRoles("EXAMINER"), async (req, res) => {
     // Examiner ki database ID JWT token se milegi
     const examinerId = req.user.id;
     // Fetch only assigned blueprints
-    
 const [blueprints] = await db.execute(
   `SELECT
       qb.id AS blueprintId,

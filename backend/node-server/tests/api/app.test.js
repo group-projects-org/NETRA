@@ -1,6 +1,6 @@
 const { after, before, test } = require("node:test");
 const assert = require("node:assert/strict");
-
+require("dotenv").config();
 process.env.DB_HOST = "127.0.0.1";
 process.env.DB_USER = "test";
 process.env.DB_PASSWORD = "test";
