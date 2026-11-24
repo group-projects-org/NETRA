@@ -25,7 +25,6 @@ export default function AddExaminer() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState(null);
-  const [copyMessage, setCopyMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -104,8 +103,11 @@ export default function AddExaminer() {
         );
       }
 
-      setSuccessData(result.data);
-      setCopyMessage("");
+      setSuccessData({
+        fullName: result.data?.fullName || formData.fullName.trim(),
+        email: result.data?.email || formData.email.trim().toLowerCase(),
+        message: result.message || "Examiner created and credentials email sent successfully.",
+      });
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
@@ -116,27 +118,11 @@ export default function AddExaminer() {
     }
   };
 
-  // Copy generated credentials
-  const handleCopyCredentials = async () => {
-    const credentials = [
-      `Examiner ID: ${successData.examinerId}`,
-      `Temporary Password: ${successData.temporaryPassword}`,
-    ].join("\n");
-
-    try {
-      await navigator.clipboard.writeText(credentials);
-      setCopyMessage("Credentials copied successfully.");
-    } catch {
-      setCopyMessage("Unable to copy. Please copy the credentials manually.");
-    }
-  };
-
   // Reset form for another examiner
   const handleAddAnother = () => {
     setFormData(initialFormData);
     setErrors({});
     setSuccessData(null);
-    setCopyMessage("");
   };
 
   const inputStyle =
@@ -235,9 +221,7 @@ export default function AddExaminer() {
             {/* SUCCESS SCREEN */}
             {successData ? (
               <div className="px-6 py-12 sm:px-8">
-
                 <div className="mx-auto max-w-md text-center">
-
                   <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl text-emerald-600">
                     ✓
                   </div>
@@ -247,12 +231,10 @@ export default function AddExaminer() {
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    The examiner account has been successfully
-                    registered in the NETRA system.
+                    {successData.message}
                   </p>
 
                   <div className="mt-8 space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-5 text-left">
-
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
                         Examiner Name
@@ -264,81 +246,46 @@ export default function AddExaminer() {
 
                     <div className="border-t border-slate-200 pt-4">
                       <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                        Examiner ID
+                        Credentials Sent To
                       </p>
-                      <p className="mt-1.5 break-all text-base font-semibold tracking-wide text-[#174b85]">
-                        {successData.examinerId}
-                      </p>
-                    </div>
-
-                    <div className="border-t border-slate-200 pt-4">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                        Temporary Password
-                      </p>
-                      <p className="mt-1.5 break-all font-mono text-sm font-semibold text-slate-800">
-                        {successData.temporaryPassword}
+                      <p className="mt-1.5 break-all text-sm font-semibold text-[#174b85]">
+                        {successData.email}
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-                      <span className="text-xs text-slate-500">
-                        Account Status
-                      </span>
+                      <span className="text-xs text-slate-500">Account Status</span>
                       <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                         Active
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">
-                        Password Change
-                      </span>
+                      <span className="text-xs text-slate-500">Password Change</span>
                       <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                        Required
+                        Required at first login
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4 text-left">
-                    <p className="text-xs font-semibold text-amber-800">
-                      Important Security Notice
+                  <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-left">
+                    <p className="text-xs font-semibold text-emerald-800">
+                      Email Notification
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-amber-700">
-                      Save these credentials securely and share them
-                      only with the intended examiner. The temporary
-                      password will not be shown again after leaving
-                      this screen.
+                    <p className="mt-1 text-xs leading-5 text-emerald-700">
+                      The Examiner ID and temporary password are sent directly to the examiner's email address. For security, these credentials are not displayed here.
                     </p>
                   </div>
 
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-
-                    <button
-                      type="button"
-                      onClick={handleCopyCredentials}
-                      className="flex-1 rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                    >
-                      Copy Credentials
-                    </button>
-
+                  <div className="mt-6">
                     <button
                       type="button"
                       onClick={handleAddAnother}
-                      className="flex-1 rounded-md bg-[#174b85] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#123c6b]"
+                      className="w-full rounded-md bg-[#174b85] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#123c6b]"
                     >
                       Add Another Examiner
                     </button>
-
                   </div>
-
-                  {copyMessage && (
-                    <p
-                      role="status"
-                      className="mt-3 text-xs text-slate-600"
-                    >
-                      {copyMessage}
-                    </p>
-                  )}
                 </div>
               </div>
             ) : (
@@ -599,8 +546,8 @@ export default function AddExaminer() {
                   ],
                   [
                     "03",
-                    "Save account",
-                    "Examiner details and password hash are saved securely.",
+                    "Email credentials",
+                    "The Examiner ID and temporary password are emailed directly to the examiner.",
                   ],
                 ].map(([number, title, description]) => (
                   <div key={number} className="flex gap-3">
