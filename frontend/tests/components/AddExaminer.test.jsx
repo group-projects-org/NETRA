@@ -83,52 +83,68 @@ describe("AddExaminer", () => {
     expect(nameInput.value).toBe("");
   });
 
-  it("handles successful examiner creation and shows credentials", async () => {
-    globalThis.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: {
-          id: 42,
-          examinerId: "NETRA-88331122",
-          fullName: "Dr. Arvind Kumar",
-          email: "arvind@example.com",
-          temporaryPassword: "tempPassword123",
-          accountStatus: "ACTIVE",
-          mustChangePassword: true,
-        },
-      }),
-    });
 
-    render(
-      <MemoryRouter>
-        <AddExaminer />
-      </MemoryRouter>
-    );
-
-    fireEvent.change(screen.getByPlaceholderText(/enter full name/i), {
-      target: { name: "fullName", value: "Dr. Arvind Kumar" },
-    });
-    fireEvent.change(screen.getByPlaceholderText(/name@organization\.com/i), {
-      target: { name: "email", value: "arvind@example.com" },
-    });
-    fireEvent.change(screen.getByPlaceholderText(/enter phone number/i), {
-      target: { name: "phone", value: "9876543210" },
-    });
-    fireEvent.change(screen.getByRole("combobox"), {
-      target: { name: "department", value: "Computer Science" },
-    });
-
-    fireEvent.submit(screen.getByRole("button", { name: /create examiner/i }).closest("form"));
-
-    await waitFor(() => {
-      expect(screen.getByText(/examiner created successfully/i)).toBeInTheDocument();
-      expect(screen.getByText("NETRA-88331122")).toBeInTheDocument();
-      expect(screen.getByText("tempPassword123")).toBeInTheDocument();
-    });
-
-    // Reset with Add Another Examiner
-    fireEvent.click(screen.getByRole("button", { name: /add another examiner/i }));
-    expect(screen.getByRole("button", { name: /create examiner/i })).toBeInTheDocument();
+it("handles successful examiner creation and confirms credentials email", async () => {
+  globalThis.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({
+      success: true,
+      message: "Examiner created and credentials email sent successfully.",
+      data: {
+        id: 42,
+        fullName: "Dr. Arvind Kumar",
+        email: "arvind@example.com",
+        accountStatus: "ACTIVE",
+        mustChangePassword: true,
+      },
+    }),
   });
+
+  render(
+    <MemoryRouter>
+      <AddExaminer />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByPlaceholderText(/enter full name/i), {
+    target: { name: "fullName", value: "Dr. Arvind Kumar" },
+  });
+
+  fireEvent.change(screen.getByPlaceholderText(/name@organization\.com/i), {
+    target: { name: "email", value: "arvind@example.com" },
+  });
+
+  fireEvent.change(screen.getByPlaceholderText(/enter phone number/i), {
+    target: { name: "phone", value: "9876543210" },
+  });
+
+  fireEvent.change(screen.getByRole("combobox"), {
+    target: { name: "department", value: "Computer Science" },
+  });
+
+  fireEvent.submit(
+    screen.getByRole("button", { name: /create examiner/i }).closest("form")
+  );
+
+  await waitFor(() => {
+    expect(
+      screen.getByText(/examiner created successfully/i)
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("arvind@example.com")).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/credentials are not displayed here/i)
+    ).toBeInTheDocument();
+  });
+
+  // Reset with Add Another Examiner
+  fireEvent.click(
+    screen.getByRole("button", { name: /add another examiner/i })
+  );
+
+  expect(
+    screen.getByRole("button", { name: /create examiner/i })
+  ).toBeInTheDocument();
+});
 });

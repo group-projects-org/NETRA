@@ -1,8 +1,3 @@
-const Mailjet = require("node-mailjet");
-const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC,
-  process.env.MJ_APIKEY_PRIVATE
-);
 
 function escapeHtml(value) {
   return String(value)
@@ -19,6 +14,13 @@ async function sendExaminerCredentials({
   examinerId,
   temporaryPassword,
 }) {
+  // Mailjet is loaded only when an email actually needs to be sent.
+  const Mailjet = require("node-mailjet");
+  const mailjet = Mailjet.apiConnect(
+    process.env.MJ_APIKEY_PUBLIC,
+    process.env.MJ_APIKEY_PRIVATE
+  );
+
   const safeName = escapeHtml(fullName);
   const safeId = escapeHtml(examinerId);
   const safePassword = escapeHtml(temporaryPassword);
